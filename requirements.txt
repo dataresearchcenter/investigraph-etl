@@ -1721,9 +1721,9 @@ prefect-dask==0.2.10 ; python_version >= "3.11" and python_version < "4" \
 prefect-ray==0.3.7 ; python_version >= "3.11" and python_version < "4" \
     --hash=sha256:9135bde82b5b0a48b4ed4401763924aa6cdcfa65733e2cc2525ac5afecfe3b07 \
     --hash=sha256:aff80516db801f33f78d7626ff8e1b43d9f63aff0eed97c19d647380cfba3007
-prefect==2.20.6 ; python_version >= "3.11" and python_version < "4" \
-    --hash=sha256:057486bad839e78a1e871ea3536f51e782c6a9238e4217e47adadac13d50cffc \
-    --hash=sha256:c1de64858d950e01519b1184ab6ff8594af613f0719ab76fa611e7c87fd52126
+prefect==2.20.17 ; python_version >= "3.11" and python_version < "4" \
+    --hash=sha256:741312e32b5177c0c8f08e0b61a7f26f6c9e079fdfc50b301cecb7bb9005fe7b \
+    --hash=sha256:7d45e6c14fa29ddf8e928d57363c023dd61dd8b3eca4409cfc2e16f80a57b1d7
 prefixdate==0.4.1 ; python_version >= "3.11" and python_version < "4" \
     --hash=sha256:707116ce720c61ef16d0b6c649ef0163591d24b33c5348bd645562189e1305dc \
     --hash=sha256:855e655d63a1466bc97346b0d88ee592918ac029042f74695b182033c74120dd
