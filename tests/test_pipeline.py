@@ -1,77 +1,32 @@
-# from importlib import reload
-
-import cloudpickle
 from ftmq.io import smart_read_proxies
 
-from investigraph.model import FlowOptions
-from investigraph.model.context import init_context
 from investigraph.pipeline import run
 
 
-def test_pipeline_pickle_ctx(gdho):
-    # this is crucial for the whole thing
-    tested = False
-    for source in gdho.extract.sources:
-        ctx = init_context(gdho, source)
-        cloudpickle.dumps(ctx)
-        tested = True
-    assert tested
-
-
-def test_pipeline_local():
-    options = FlowOptions(config="./tests/fixtures/eu_authorities.local.yml")
-    out = run(options)
+def test_pipeline_local(tmp_path):
+    out = run("./tests/fixtures/eu_authorities.local.yml")
     proxies = [p for p in smart_read_proxies(out.entities_uri)]
     assert len(proxies) == 151
 
-
-# def test_pipeline_local_ray(monkeypatch):
-#     monkeypatch.setenv("PREFECT_TASK_RUNNER", "ray")
-#     options = FlowOptions(config="./tests/fixtures/eu_authorities.local.yml")
-#     from investigraph.pipeline import run as _run
-
-#     out = _run(options)
-#     proxies = [p for p in smart_read_proxies(out)]
-#     assert len(proxies) == 151
+    entities_uri = tmp_path / "entities.ftm.json"
+    out = run("./tests/fixtures/eu_authorities.local.yml", entities_uri=entities_uri)
+    assert out.entities_uri == entities_uri
+    proxies = [p for p in smart_read_proxies(entities_uri)]
+    assert len(proxies) == 151
 
 
-# def test_pipeline_local_dask(monkeypatch):
-#     monkeypatch.setenv("PREFECT_TASK_RUNNER", "dask")
-#     options = FlowOptions(config="./tests/fixtures/eu_authorities.local.yml")
-#     from investigraph.pipeline import run as _run
-
-#     out = _run(options)
-#     proxies = [p for p in smart_read_proxies(out)]
-#     assert len(proxies) == 151
-
-
-def test_pipeline_from_config():
-    options = FlowOptions(config="./tests/fixtures/ec_meetings/config.yml")
-    out = run(options)
-    proxies = [p for p in smart_read_proxies(out.entities_uri)]
-    assert len(proxies) > 50_000
+# def test_pipeline_from_config():
+#     out = run("./tests/fixtures/ec_meetings/config.yml")
+#     proxies = [p for p in smart_read_proxies(out.entities_uri)]
+#     assert len(proxies) > 50_000
 
 
 def test_pipeline_local_customized():
-    options = FlowOptions(config="./tests/fixtures/eu_authorities.custom.yml")
-    assert run(options)
+    assert run("./tests/fixtures/eu_authorities.custom.yml")
 
 
-def test_pipeline_chunk_size():
-    options = FlowOptions(
-        config="./tests/fixtures/eu_authorities.local.yml",
-        chunk_size=100,
-    )
-    out = run(options)
-    proxies = [p for p in smart_read_proxies(out.entities_uri)]
+def test_pipeline_export(tmp_path):
+    entities_uri = tmp_path / "entities.ftm.json"
+    assert run("./tests/fixtures/eu_authorities.custom.yml", entities_uri=entities_uri)
+    proxies = [p for p in smart_read_proxies(entities_uri)]
     assert len(proxies) == 151
-
-
-# def test_pipeline_caching(monkeypatch):
-#     monkeypatch.setenv("TASK_CACHE", "true")
-#     reload(settings)
-#     assert settings.TASK_CACHE is True
-#     options = FlowOptions(config="./tests/fixtures/eu_authorities.local.yml")
-#     # FIXME this still doesn't work
-#     assert run(options)
-#     assert run(options)

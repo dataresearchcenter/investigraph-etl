@@ -4,11 +4,11 @@ from fingerprints import generate as fp
 from followthemoney.util import join_text, make_entity_id
 from nomenklatura.entity import CE
 
-from investigraph.model import Context
+from investigraph.model import SourceContext
 from investigraph.types import SDict
 
 
-def make_address(ctx: Context, data: SDict) -> CE:
+def make_address(ctx: SourceContext, data: SDict) -> CE:
     location = data.pop("Location")
     id_ = ctx.make_id(location, prefix="addr")
     proxy = ctx.make_proxy("Address", id_)
@@ -16,7 +16,7 @@ def make_address(ctx: Context, data: SDict) -> CE:
     return proxy
 
 
-def make_person(ctx: Context, name: str, role: str, body: CE) -> CE:
+def make_person(ctx: SourceContext, name: str, role: str, body: CE) -> CE:
     id_ = ctx.make_slug("person", make_entity_id(body.id, fp(name)))
     proxy = ctx.make_proxy("Person", id_)
     proxy.add("name", name)
@@ -24,7 +24,7 @@ def make_person(ctx: Context, name: str, role: str, body: CE) -> CE:
     return proxy
 
 
-def make_organization(ctx: Context, regId: str, name: str | None = None) -> CE:
+def make_organization(ctx: SourceContext, regId: str, name: str | None = None) -> CE:
     id_ = ctx.make_slug(regId, prefix="eu-tr")
     proxy = ctx.make_proxy("Organization", id_)
     if fp(name):
@@ -48,11 +48,11 @@ def zip_things(
             # log.error(f"Unable to unzip things: {things1} | {things2}")
 
 
-def make_organizations(ctx: Context, data: SDict) -> Generator[CE, None, None]:
-    regIds = data.pop("Transparency register ID")
+def make_organizations(ctx: SourceContext, data: SDict) -> Generator[CE, None, None]:
+    regIds = data.pop("Transparency register ID") or ""
     orgs = False
     for name, regId in zip_things(
-        data.pop("Name of interest representative"),
+        data.pop("Name of interest representative") or "",
         regIds,
     ):
         org = make_organization(ctx, regId, name)
@@ -68,17 +68,19 @@ def make_organizations(ctx: Context, data: SDict) -> Generator[CE, None, None]:
                 yield org
 
 
-def make_persons(ctx: Context, data: SDict, body: CE) -> Generator[CE, None, None]:
+def make_persons(
+    ctx: SourceContext, data: SDict, body: CE
+) -> Generator[CE, None, None]:
     for name, role in zip_things(
         data.pop("Name of EC representative"),
-        data.pop("Title of EC representative"),
+        data.pop("Title of EC representative") or "",
         scream=True,
     ):
         yield make_person(ctx, name, role, body)
 
 
 def make_event(
-    ctx: Context, data: SDict, organizer: CE, involved: list[CE]
+    ctx: SourceContext, data: SDict, organizer: CE, involved: list[CE]
 ) -> Generator[CE, None, None]:
     date = data.pop("Date of meeting")
     participants = [o for o in make_organizations(ctx, data)]
@@ -109,7 +111,7 @@ def make_event(
     yield proxy
 
 
-def parse_record(ctx: Context, data: SDict, body: CE):
+def parse_record(ctx: SourceContext, data: SDict, body: CE):
     involved = [x for x in make_persons(ctx, data, body)]
     yield from make_event(ctx, data, body, involved)
     yield from involved
@@ -123,7 +125,7 @@ def parse_record(ctx: Context, data: SDict, body: CE):
         yield rel
 
 
-def parse_record_ec(ctx: Context, data: SDict):
+def parse_record_ec(ctx: SourceContext, data: SDict):
     # meetings of EC representatives
     name = data.pop("Name of cabinet")
     id_ = ctx.make_slug(fp(name))
@@ -135,7 +137,7 @@ def parse_record_ec(ctx: Context, data: SDict):
     yield from parse_record(ctx, data, body)
 
 
-def parse_record_dg(ctx: Context, data: SDict):
+def parse_record_dg(ctx: SourceContext, data: SDict):
     # meetings of EC Directors-General
     acronym = data.pop("Name of DG - acronym")
     id_ = ctx.make_slug("dg", acronym)
@@ -148,7 +150,7 @@ def parse_record_dg(ctx: Context, data: SDict):
     yield from parse_record(ctx, data, body)
 
 
-def handle(ctx: Context, data: SDict, ix: int):
+def handle(ctx: SourceContext, data: SDict, ix: int):
     if ctx.source.name.startswith("ec"):
         handler = parse_record_ec
     else:

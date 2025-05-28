@@ -1,180 +1,52 @@
 """
-The main entrypoint for the prefect flow
+The main entrypoint for running a dataset config
 """
 
 from datetime import datetime
-from typing import Any, Generator, Type
 
-from anystore.util import make_data_checksum
-from ftmq.model.coverage import DatasetStats
-from prefect import flow, task
-from prefect.task_runners import TaskRunner, ThreadPoolTaskRunner
+from anystore.io import smart_write
+from anystore.types import Uri
+from pydantic import BaseModel
 
-from investigraph import __version__
-from investigraph.model.context import BaseContext, Context
-from investigraph.model.flow import Flow, FlowOptions
-from investigraph.model.resolver import Resolver
-from investigraph.settings import SETTINGS
+from investigraph.model.config import Config, get_config
+from investigraph.model.context import DatasetContext
 
 
-def get_runner_from_env() -> Type[TaskRunner]:
-    if SETTINGS.task_runner == "dask":
-        try:
-            from prefect_dask.task_runners import DaskTaskRunner
+class WorkflowRun(BaseModel):
+    """
+    Defines a workflow run
+    """
 
-            return DaskTaskRunner
-        except ImportError:
-            raise ImportError("Install prefect dask dependencies")
-    if SETTINGS.task_runner == "ray":
-        try:
-            from prefect_ray import RayTaskRunner
-
-            return RayTaskRunner
-        except ImportError:
-            raise ImportError("Install prefect ray dependencies")
-    return ThreadPoolTaskRunner
+    config: Config
+    start: datetime
+    end: datetime
+    entities_uri: Uri | None
 
 
-def get_task_cache_key(_, params) -> str:
-    return params["ckey"]
+def run(
+    config_uri: Uri,
+    store_uri: Uri | None = None,
+    entities_uri: Uri | None = None,
+    index_uri: Uri | None = None,
+) -> WorkflowRun:
+    start = datetime.now()
+    config = get_config(config_uri)
+    config.load.uri = store_uri or config.load.uri
+    config.export.index_uri = index_uri or config.export.index_uri
+    config.export.entities_uri = entities_uri or config.export.entities_uri
+    ctx = DatasetContext(config=config)
+    for sctx in ctx.get_sources():
+        records = sctx.extract()
+        proxies = sctx.transform(records)
+        sctx.load(proxies)
+    index = None
+    if config.export.entities_uri:
+        index = ctx.export()
+    if config.export.index_uri:
+        index = index or ctx.export()
+        smart_write(config.export.index_uri, index.model_dump_json().encode())
 
-
-@task(
-    retries=SETTINGS.task_retries,
-    retry_delay_seconds=SETTINGS.task_retry_delay,
-    cache_key_fn=get_task_cache_key,
-    cache_expiration=SETTINGS.task_cache_expiration,
-    refresh_cache=not SETTINGS.task_cache or not SETTINGS.aggregate_cache,
-    cache_result_in_memory=False,
-)
-def aggregate(ctx: Context, ckey: str) -> DatasetStats:
-    stats = ctx.aggregate(ctx)
-    ctx.log.info("AGGREGATED to %d proxies", stats.entity_count)
-    ctx.log.info("ENTITIES EXPORT: %s", ctx.config.aggregate.entities_uri)
-    return stats
-
-
-@task(
-    retries=SETTINGS.task_retries,
-    retry_delay_seconds=SETTINGS.task_retry_delay,
-    cache_key_fn=get_task_cache_key,
-    cache_expiration=SETTINGS.task_cache_expiration,
-    refresh_cache=not SETTINGS.task_cache or not SETTINGS.load_cache,
-    cache_result_in_memory=False,
-)
-def load(ctx: Context, ckey: str) -> str | None:
-    proxies = ctx.cache.get(ckey)
-    if proxies is None:
-        ctx.log.warning(f"No proxies found for cache key `{ckey}`")
-    count = ctx.load(proxies)
-    ctx.log.info(f"LOADED {count} proxies to `{ctx.config.load.uri}`")
-    return make_data_checksum(proxies)
-
-
-@task(
-    retries=SETTINGS.task_retries,
-    retry_delay_seconds=SETTINGS.task_retry_delay,
-    cache_key_fn=get_task_cache_key,
-    cache_expiration=SETTINGS.task_cache_expiration,
-    refresh_cache=not SETTINGS.task_cache or not SETTINGS.transform_cache,
-    cache_result_in_memory=False,
-)
-def transform(ctx: Context, ckey: str) -> str | None:
-    proxies: list[dict[str, Any]] = []
-    records = ctx.cache.get(ckey)
-    if records is None:
-        ctx.log.warning(f"No records found for cache key `{ckey}`")
-        return
-    for rec, ix in records:
-        try:
-            for proxy in ctx.config.transform.handle(ctx, rec, ix):
-                proxies.append(proxy.to_dict())
-        except Exception as e:
-            ctx.log.error(f"{e.__class__.__name__}: {e}")
-    ctx.log.info("TRANSFORMED %d records", len(records))
-    return ctx.cache.set(proxies)
-
-
-def extract(
-    ctx: Context, ckey: str, res: Resolver | None = None
-) -> Generator[str, None, None]:
-    ctx.log.info("Starting EXTRACT stage ...")
-    if SETTINGS.task_cache and SETTINGS.extract_cache:
-        cached_result = ctx.cache.get(ckey)
-        if cached_result is not None:
-            ctx.log.info("EXTRACT complete (CACHED)")
-            yield from cached_result
-            return
-    if res is not None:
-        enumerator = enumerate(ctx.config.extract.handle(ctx, res), 1)
-    else:
-        enumerator = enumerate(ctx.config.extract.handle(ctx), 1)
-    batch = []
-    batch_keys = []
-    ix = 0
-    for ix, rec in enumerator:
-        batch.append((rec, ix))
-        if ix % ctx.config.transform.chunk_size == 0:
-            ctx.log.info("extracting record %d ...", ix)
-            batch_key = ctx.cache.set(batch)
-            batch_keys.append(batch_key)
-            yield batch_key
-            batch = []
-    if batch:
-        batch_key = ctx.cache.set(batch)
-        batch_keys.append(batch_key)
-        yield batch_key
-    ctx.cache.set(batch_keys, ckey)
-    ctx.log.info("EXTRACTED %d records", ix)
-
-
-@flow(
-    name="investigraph-extract",
-    version=__version__,
-    flow_run_name="{ctx.source.name}",
-    task_runner=get_runner_from_env(),
-    cache_result_in_memory=False,
-)
-def run_pipeline(ctx: Context) -> list[Any]:
-    res = None
-    if ctx.config.extract.fetch:
-        res = Resolver(source=ctx.source)
-        if res.source.is_http:
-            res._resolve_http()
-        ckey = res.get_cache_key()
-    else:
-        ckey = ctx.source.uri
-
-    results = []
-    for key in extract(ctx, f"extract-{ckey}", res):
-        transformed = transform.submit(ctx, key)
-        loaded = load.submit(ctx, transformed)
-        results.append(loaded)
-
-    return results
-
-
-@flow(
-    name="investigraph",
-    version=__version__,
-    flow_run_name="{options.flow_name}",
-    task_runner=get_runner_from_env(),
-    cache_result_in_memory=False,
-)
-def run(options: FlowOptions) -> Flow:
-    flow = Flow.from_options(options)
-    results = []
-    ctx = BaseContext.from_config(flow.config)
-
-    for run_ctx in ctx.from_sources():
-        results.extend(run_pipeline(run_ctx))
-
-    if flow.config.aggregate:
-        fragments = [r.result() for r in results]
-        res = aggregate.submit(ctx, make_data_checksum(fragments))
-        ctx.config.dataset.apply_stats(res.result())
-        ctx.export_metadata()
-        ctx.log.info("INDEX EXPORT: %s" % ctx.config.aggregate.index_uri)
-
-    flow.end = datetime.utcnow()
-    return flow
+    end = datetime.now()
+    return WorkflowRun(
+        start=start, end=end, config=config, entities_uri=config.export.entities_uri
+    )

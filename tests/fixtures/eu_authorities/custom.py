@@ -1,8 +1,8 @@
-from investigraph.model import Context
+from investigraph.model import SourceContext
 from investigraph.types import SDict
 
 
-def parse_record(ctx: Context, data: SDict, ix: int):
+def parse_record(ctx: SourceContext, data: SDict, ix: int):
     slug = data.pop("URL name")
     id_ = ctx.make_slug(slug)
     body = ctx.make_proxy("PublicBody", id_)

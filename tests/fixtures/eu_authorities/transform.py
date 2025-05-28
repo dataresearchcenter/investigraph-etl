@@ -3,11 +3,11 @@ from typing import Any
 # import html2text
 from zavod.util import join_slug
 
-from investigraph.model import Context
+from investigraph.model import SourceContext
 from investigraph.util import make_proxy
 
 
-def handle(ctx: Context, data: dict[str, Any], ix: int):
+def handle(ctx: SourceContext, data: dict[str, Any], ix: int):
     slug = data.pop("URL name")
     id_ = join_slug(ctx.prefix, slug)
     body = make_proxy("PublicBody", id_)

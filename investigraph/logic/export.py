@@ -1,5 +1,5 @@
 """
-aggregate fragments
+aggregate fragments to export
 """
 
 from typing import TYPE_CHECKING
@@ -12,7 +12,7 @@ from ftmq.types import CE
 from ftmq.util import make_proxy
 
 if TYPE_CHECKING:
-    from investigraph.model import Context
+    from investigraph.model import DatasetContext
 
 from investigraph.types import CEGenerator
 
@@ -32,9 +32,9 @@ def get_iterator(proxies: CEGenerator, collector: Collector) -> CEGenerator:
         yield proxy
 
 
-def handle(ctx: "Context") -> DatasetStats:
+def handle(ctx: "DatasetContext") -> DatasetStats:
     collector = Collector()
     proxies = ctx.store.iterate(dataset=ctx.dataset)
     iterator = get_iterator(proxies, collector)
-    smart_write_proxies(ctx.config.aggregate.entities_uri, iterator, serialize=True)
+    smart_write_proxies(ctx.config.export.entities_uri, iterator)
     return collector.export()

@@ -15,23 +15,26 @@ classifiers = [
 ]
 requires-python = ">=3.11,<4"
 dependencies = [
-    "anystore (>=0.2.2,<0.3.0)",
-    "ftmq (>=0.7.1,<0.8.0)",
-    "pydantic-settings (>=2.7.1,<3.0.0)",
-    "prefect (>=3.1.12,<4.0.0)",
-    "runpandarun (>=0.5.2,<0.6.0)",
-    "fakeredis (>=2.26.2,<3.0.0)",
-    "pantomime (>=0.6.1,<0.7.0)",
+    "anystore @ file:///home/elliot/Projects/anystore",
+    "ftmq (>=0.8.5,<0.9.0)",
+    "runpandarun (>=0.5.5,<0.6.0)",
+    "dateparser (>=1.2.1,<2.0.0)",
 ]
+
+[project.optional-dependencies]
+sql = ["sqlalchemy (>=2.0.36,<3.0.0)"]
+postgres = ["sqlalchemy (>=2.0.36,<3.0.0)", "psycopg2 (>=2.9.10,<3.0.0)"]
+redis = ["redis (>=4.0.0)"]
+level = ["plyvel (>=1.5.1,<2.0.0)"]
 
 [project.scripts]
 investigraph = "investigraph.cli:cli"
 
 [project.urls]
 Homepage = "https://investigraph.dev"
-Repository = "https://github.com/investigativedata/investigraph-etl"
+Repository = "https://github.com/dataresearchcenter/investigraph-etl"
 Documentation = "https://docs.investigraph.dev"
-Issues = "https://github.com/investigativedata/investigraph-etl/issues"
+Issues = "https://github.com/dataresearchcenter/investigraph-etl/issues"
 
 [tool.poetry.group.dev.dependencies]
 pytest-env = ">=1.1.1"
@@ -42,16 +45,16 @@ isort = "^5.12.0"
 mypy = "^1.7.0"
 pre-commit = ">=3.5,<5.0"
 flake8 = ">=6.1,<8.0"
-pytest-xdist = "^3.4.0"
 bump2version = "^1.0.1"
-poetry-plugin-export = "^1.8.0"
 
+
+[tool.poetry.dependencies]
+anystore = { develop = true }
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest_env]
 DEBUG = 1
-PREFECT_HOME = ".test"
-INVESTIGRAPH_REDIS = 0
 INVESTIGRAPH_DATA_ROOT = ".test"
+NOMENKLATURA_DB_URL = "sqlite:///:memory:"

@@ -4,20 +4,20 @@ Load transformed data (proxy fragments) to a nomenklatura statement store
 
 from typing import TYPE_CHECKING, Iterable, TypeAlias
 
-from ftmq.util import make_proxy
+from nomenklatura.entity import CE
 
 from investigraph.types import SDict
 
 if TYPE_CHECKING:
-    from investigraph.model import Context
+    from investigraph.model import DatasetContext
 
 TProxies: TypeAlias = Iterable[SDict]
 
 
-def handle(ctx: "Context", proxies: TProxies) -> int:
+def handle(ctx: "DatasetContext", proxies: Iterable[CE]) -> int:
     ix = 0
     with ctx.store.writer() as bulk:
         for proxy in proxies:
-            bulk.add_entity(make_proxy(proxy))
+            bulk.add_entity(proxy)
             ix += 1
     return ix

@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import orjson
-from ftmq.util import make_proxy
 from typer.testing import CliRunner
 
 from investigraph.cli import cli
@@ -25,34 +23,6 @@ def test_cli_run(fixtures_path: Path):
 
 
 def test_cli_inspect(fixtures_path: Path):
-    # FIXME stdout/stderr logging in result?
     config = str(fixtures_path / "gdho" / "config.local.yml")
-    result = runner.invoke(cli, ["inspect", config])
+    result = runner.invoke(cli, ["inspect", "-c", config])
     assert result.exit_code == 0
-    result = runner.invoke(cli, ["inspect", config, "-e"])
-    assert result.exit_code == 0
-    result = runner.invoke(cli, ["inspect", config, "--extract"])
-    assert result.exit_code == 0
-    result = runner.invoke(cli, ["inspect", config, "-t"])
-    assert result.exit_code == 0
-    result = runner.invoke(cli, ["inspect", config, "--transform"])
-    assert result.exit_code == 0
-
-    result = runner.invoke(cli, ["inspect", config, "--transform", "--to-json"])
-    assert result.exit_code == 0
-    tested = False
-    for line in result.stdout.split("\n"):
-        if line.startswith("{"):
-            data = orjson.loads(line)
-            proxy = make_proxy(data)
-            assert "gdho" in proxy.datasets
-            tested = True
-            break
-    assert tested
-
-    result = runner.invoke(
-        cli, ["inspect", config, "--transform", "--to-json", "-l", "1"]
-    )
-    assert result.exit_code == 0
-    proxies = [ln for ln in result.stdout.strip().split("\n") if ln.startswith("{")]
-    assert len(proxies) == 1

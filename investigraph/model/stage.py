@@ -1,24 +1,28 @@
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeAlias
 
+from anystore.types import Uri
+from anystore.util import pydantic_merge
 from banal import ensure_list, keys_values
 from pydantic import BaseModel
 from runpandarun import Playbook
 
 from investigraph.model.mapping import QueryMapping
-from investigraph.settings import SETTINGS
-from investigraph.util import get_func, pydantic_merge
+from investigraph.settings import Settings
+from investigraph.util import get_func
 
 if TYPE_CHECKING:
-    from investigraph.model.context import Context
+    from investigraph.model.context import SourceContext, DatasetContext
 
 from investigraph.model.source import Source
 
+settings = Settings()
+
+CTX: TypeAlias = "SourceContext | DatasetContext"
+
 
 class Stage(BaseModel):
-    default_handler: ClassVar[str | None] = None
-
-    handler: str
-    chunk_size: int = SETTINGS.chunk_size
+    default_handler: ClassVar[str] = ""
+    handler: str = ""
 
     def __init__(self, **data):
         data["handler"] = data.pop("handler", self.default_handler)
@@ -27,34 +31,40 @@ class Stage(BaseModel):
     def get_handler(self) -> Callable:
         return get_func(self.handler)
 
-    def handle(self, ctx: "Context", *args, **kwargs) -> Any:
+    def handle(self, ctx: CTX, *args, **kwargs) -> Any:
         handler = self.get_handler()
         return handler(ctx, *args, **kwargs)
 
 
 class SeedStage(Stage):
-    default_handler: ClassVar[str] = SETTINGS.default_seeder
+    default_handler = settings.seeder
 
+    uri: str | None = None
+    prefix: str | None = None
+    exclude_prefix: str | None = None
     glob: str | list[str] | None = None
     storage_options: dict[str, Any] | None = None
     source_options: dict[str, Any] | None = None
 
 
 class ExtractStage(Stage):
-    default_handler: ClassVar[str] = SETTINGS.default_extractor
+    default_handler = settings.extractor
 
-    fetch: bool = True
+    archive: bool = True
     sources: list[Source] = []
     pandas: Playbook = Playbook()
 
     def __init__(self, **data):
         super().__init__(**data)
         for source in self.sources:
-            source.pandas = pydantic_merge(self.pandas, source.pandas)
+            if source.pandas is not None:
+                source.pandas = pydantic_merge(self.pandas, source.pandas)
+            else:
+                source.pandas = source.pandas or self.pandas
 
 
 class TransformStage(Stage):
-    default_handler: ClassVar[str] = SETTINGS.default_transformer
+    default_handler = settings.transformer
 
     queries: list[QueryMapping] = []
 
@@ -64,13 +74,13 @@ class TransformStage(Stage):
 
 
 class LoadStage(Stage):
-    default_handler: ClassVar[str] = SETTINGS.default_loader
+    default_handler = settings.loader
 
-    uri: str = "memory:///"
+    uri: str = settings.store_uri
 
 
-class AggregateStage(Stage):
-    default_handler: ClassVar[str] = SETTINGS.default_aggregator
+class ExportStage(Stage):
+    default_handler = settings.exporter
 
-    index_uri: str | None = None
-    entities_uri: str | None = None
+    index_uri: Uri | None = None
+    entities_uri: Uri | None = None
