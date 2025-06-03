@@ -26,6 +26,7 @@ RUN mkdir -p /data
 RUN chown -R 1000:1000 /data
 
 ENV INVESTIGRAPH_DATA_ROOT=/data
+ENV INVESTIGRAPH_STORE_URI=leveldb:///data/store.db
 ENV DEBUG=0
 
 USER 1000
