@@ -240,7 +240,7 @@ python-versions = ">=3.11,<4"
 groups = ["main"]
 markers = "python_version == \"3.11\" or python_version >= \"3.12\""
 files = []
-develop = true
+develop = false
 
 [package.dependencies]
 banal = ">=1.0.6,<2.0.0"
@@ -264,8 +264,10 @@ redis = ["fakeredis (>=2.26.2,<3.0.0)", "redis (>=4.0.0)"]
 sql = ["sqlalchemy (>=2.0.36,<3.0.0)"]
 
 [package.source]
-type = "directory"
-url = "../../anystore"
+type = "git"
+url = "https://github.com/investigativedata/anystore.git"
+reference = "develop"
+resolved_reference = "6b18d3e2b7ef3bb6a93067b86a81660f90cff08e"
 
 [[package]]
 name = "async-timeout"
@@ -1043,13 +1045,11 @@ name = "ftmq"
 version = "0.8.5"
 description = "followthemoney query dsl and io helpers"
 optional = false
-python-versions = "<4,>=3.11"
+python-versions = ">=3.11,<4"
 groups = ["main"]
 markers = "python_version == \"3.11\" or python_version >= \"3.12\""
-files = [
-    {file = "ftmq-0.8.5-py3-none-any.whl", hash = "sha256:0ca2e750f9dead3ec841aaa2f31b96bf650bde310fb13626ada7732bdfcd24ec"},
-    {file = "ftmq-0.8.5.tar.gz", hash = "sha256:8b8e22e780d501ca493edc2ee26ef70970b68cbefc4838b8ad479956aefb3850"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 alephclient = ">=2.6.0,<3.0.0"
@@ -1067,6 +1067,12 @@ level = ["plyvel (>=1.5.1,<2.0.0)"]
 postgres = ["psycopg2 (>=2.9.10,<3.0.0)", "sqlalchemy (>=2.0.36,<3.0.0)"]
 redis = ["fakeredis (>=2.26.2,<3.0.0)", "redis (>=5.2.1,<6.0.0)"]
 sql = ["sqlalchemy (>=2.0.36,<3.0.0)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/investigativedata/ftmq.git"
+reference = "develop"
+resolved_reference = "cdca7aba803c280661daa245da542c63f8ba951a"
 
 [[package]]
 name = "ghp-import"
@@ -4386,4 +4392,4 @@ sql = ["sqlalchemy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4"
-content-hash = "3872ccd79942bad06acf2da337c073f508cd0b84a24f54d0e6d139a6dbc06f25"
+content-hash = "e522c546a944cadb8971e107bfe5a8fcf4f128b8dea81f9c9bbfe4c0519f1ba8"
