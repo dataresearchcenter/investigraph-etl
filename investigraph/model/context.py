@@ -107,19 +107,32 @@ class DatasetContext(BaseModel):
         """
         return self.config.export.handle(self, *args, **kwargs)
 
-    def get_sources(self) -> Generator["SourceContext", None, None]:
+    def get_sources(
+        self, limit: int | None = None
+    ) -> Generator["SourceContext", None, None]:
         """
         Get all the instances of
         [`SourceContext`][investigraph.model.context.SourceContext] for the
         current pipeline.
 
+        Args:
+            limit: Optionally only return this number of items (for debugging
+                purposes)
+
         Yields:
             Generator for Source model instances
         """
+        ix = 0
         for source in self.config.seed.handle(self):
             yield SourceContext(config=self.config, source=source)
+            ix += 1
+            if limit is not None and limit > ix:
+                return
         for source in self.config.extract.sources:
             yield SourceContext(config=self.config, source=source)
+            ix += 1
+            if limit is not None and limit > ix:
+                return
 
     # RUNTIME HELPERS
 

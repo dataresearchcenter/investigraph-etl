@@ -81,6 +81,10 @@ def cli_seed(
     config: CONFIG_URI = None,
     out_uri: Annotated[str, typer.Option("-o")] = "-",
     output_format: Annotated[IOFormat, typer.Option()] = IOFormat.json,
+    limit: Annotated[
+        int | None,
+        typer.Option("-l", help="Only get this number of items"),
+    ] = None,
 ):
     """
     Execute a dataset pipelines seed stage and write sources to out_uri
@@ -88,7 +92,7 @@ def cli_seed(
     """
     with ConfigUri(config) as config_uri:
         ctx = get_dataset_context(config_uri)
-        sources = (c.source for c in ctx.get_sources())
+        sources = (c.source for c in ctx.get_sources(limit))
         smart_write_models(out_uri, sources, output_format=output_format.name)
 
 
