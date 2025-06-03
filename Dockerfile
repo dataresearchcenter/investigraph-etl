@@ -19,6 +19,7 @@ COPY pyproject.toml /investigraph/
 COPY VERSION /investigraph/
 COPY README.md /investigraph/
 
+RUN pip install -q plyvel
 RUN pip install -q /investigraph
 
 RUN mkdir -p /data
