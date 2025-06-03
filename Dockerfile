@@ -5,6 +5,7 @@ LABEL org.opencontainers.image.licenses=MIT
 LABEL org.opencontainers.image.source=https://github.com/dataresearchcenter/investigraph
 
 RUN apt-get update && apt-get -y upgrade
+RUN apt-get install -y git
 RUN pip install -q -U pip setuptools
 
 RUN apt-get install -y pkg-config libicu-dev
