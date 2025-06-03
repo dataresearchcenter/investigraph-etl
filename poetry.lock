@@ -201,7 +201,7 @@ version = "0.7.0"
 description = "Reusable constraint types to use with typing.Annotated"
 optional = false
 python-versions = ">=3.8"
-groups = ["main"]
+groups = ["main", "dev"]
 markers = "python_version == \"3.11\" or python_version >= \"3.12\""
 files = [
     {file = "annotated_types-0.7.0-py3-none-any.whl", hash = "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"},
@@ -1936,21 +1936,22 @@ files = [
 ]
 
 [[package]]
-name = "mkdocs-typer"
-version = "0.0.3"
-description = "An MkDocs extension to generate documentation for Typer command line applications"
+name = "mkdocs-typer2"
+version = "0.1.4"
+description = "Mkdocs plugin for generating Typer CLI docs"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.10"
 groups = ["dev"]
 markers = "python_version == \"3.11\" or python_version >= \"3.12\""
 files = [
-    {file = "mkdocs_typer-0.0.3-py3-none-any.whl", hash = "sha256:b2a9a44da590a7100114fde4de9123fedfea692d229379984db20ee3b3f12d7c"},
-    {file = "mkdocs_typer-0.0.3.tar.gz", hash = "sha256:4dd37f024190a82aaf0f6c984faafb15167d34eab7e29a6a85e61362423a4eb7"},
+    {file = "mkdocs_typer2-0.1.4-py3-none-any.whl", hash = "sha256:8d269313647fa5a798a043e12ba5806c4c9253d348f753f5d18a6010d9699346"},
+    {file = "mkdocs_typer2-0.1.4.tar.gz", hash = "sha256:1e974bbe7717c42f747215270323196d6acd214aa383634cf237f746293c3b90"},
 ]
 
 [package.dependencies]
-markdown = "==3.*"
-typer = "==0.*"
+mkdocs = ">=1.6.1"
+pydantic = ">=2.9.2"
+typer = ">=0.12.5"
 
 [[package]]
 name = "mkdocstrings"
@@ -2821,7 +2822,7 @@ version = "2.11.5"
 description = "Data validation using Python type hints"
 optional = false
 python-versions = ">=3.9"
-groups = ["main"]
+groups = ["main", "dev"]
 markers = "python_version == \"3.11\" or python_version >= \"3.12\""
 files = [
     {file = "pydantic-2.11.5-py3-none-any.whl", hash = "sha256:f9c26ba06f9747749ca1e5c94d6a85cb84254577553c8785576fd38fa64dc0f7"},
@@ -2844,7 +2845,7 @@ version = "2.33.2"
 description = "Core functionality for Pydantic validation and serialization"
 optional = false
 python-versions = ">=3.9"
-groups = ["main"]
+groups = ["main", "dev"]
 markers = "python_version == \"3.11\" or python_version >= \"3.12\""
 files = [
     {file = "pydantic_core-2.33.2-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:2b3d326aaef0c0399d9afffeb6367d5e26ddc24d351dbc9c636840ac355dc5d8"},
@@ -4041,7 +4042,7 @@ version = "0.4.0"
 description = "Runtime typing introspection tools"
 optional = false
 python-versions = ">=3.9"
-groups = ["main"]
+groups = ["main", "dev"]
 markers = "python_version == \"3.11\" or python_version >= \"3.12\""
 files = [
     {file = "typing_inspection-0.4.0-py3-none-any.whl", hash = "sha256:50e72559fcd2a6367a19f7a7e610e6afcb9fac940c650290eed893d61386832f"},
@@ -4385,4 +4386,4 @@ sql = ["sqlalchemy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4"
-content-hash = "8e38b72c4e232c549f34ad4eb4d95851bf5ca2689138aa529387adbe021c4cb7"
+content-hash = "3872ccd79942bad06acf2da337c073f508cd0b84a24f54d0e6d139a6dbc06f25"

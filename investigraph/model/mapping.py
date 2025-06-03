@@ -43,7 +43,7 @@ class QueryMapping(BaseModel):
 
 @cache
 def load_mapping(mapping: QueryMapping) -> _QueryMapping:
-    mapping = mapping.model_dump(by_alias=True)
-    mapping.pop("database", None)
-    mapping["csv_url"] = "/dev/null"
-    return model.make_mapping(mapping)
+    mapping_data = mapping.model_dump(by_alias=True)
+    mapping_data.pop("database", None)
+    mapping_data["csv_url"] = "/dev/null"
+    return model.make_mapping(mapping_data)

@@ -25,6 +25,16 @@ def extract_pandas(ctx: SourceContext) -> RecordGenerator:
 
 # entrypoint
 def handle(ctx: SourceContext, *args, **kwargs) -> RecordGenerator:
+    """
+    The default handler for the extract stage. It handles tabular sources with
+    `pandas`. Custom extract handlers must follow this function signature.
+
+    Args:
+        ctx: instance of the current `SourceContext`
+
+    Yields:
+        Generator of dictionaries `dict[str, Any]` that are the extracted records.
+    """
     if ctx.source.pandas is None:
         ctx.source.pandas = Playbook()
     yield from extract_pandas(ctx, *args, **kwargs)

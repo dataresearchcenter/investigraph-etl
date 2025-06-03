@@ -4,10 +4,12 @@ aggregate fragments to export
 
 from typing import TYPE_CHECKING
 
+from anystore import smart_write
 from followthemoney.proxy import E
 from ftmq.aggregate import merge
 from ftmq.io import smart_write_proxies
-from ftmq.model.coverage import Collector, DatasetStats
+from ftmq.model import Dataset
+from ftmq.model.coverage import Collector
 from ftmq.types import CE
 from ftmq.util import make_proxy
 
@@ -32,9 +34,35 @@ def get_iterator(proxies: CEGenerator, collector: Collector) -> CEGenerator:
         yield proxy
 
 
-def handle(ctx: "DatasetContext") -> DatasetStats:
+def handle(ctx: "DatasetContext", *args, **kwargs) -> Dataset:
+    """
+    The default handler of the export stage. It iterates through the entities
+    store, calculates dataset statistics and writes the entities and dataset
+    index to json files.
+
+    If neither `entities_uri` or `index_uri` is set, no stats for the `Dataset`
+    are computed.
+
+    Args:
+        ctx: The current runtime `DatasetContext`
+
+    Returns:
+        The `Dataset` object with calculated statistics.
+    """
     collector = Collector()
     proxies = ctx.store.iterate(dataset=ctx.dataset)
     iterator = get_iterator(proxies, collector)
-    smart_write_proxies(ctx.config.export.entities_uri, iterator)
-    return collector.export()
+    if ctx.config.export.entities_uri:
+        smart_write_proxies(ctx.config.export.entities_uri, iterator)
+    elif ctx.config.export.index_uri:
+        # still compute statistics by iterating through the proxy iterator
+        _ = [p for p in iterator]
+
+    if ctx.config.export.index_uri:
+        stats = collector.export()
+        ctx.config.dataset.apply_stats(stats)
+        smart_write(
+            ctx.config.export.index_uri, ctx.config.dataset.model_dump_json().encode()
+        )
+
+    return ctx.config.dataset

@@ -26,11 +26,24 @@ class SourceInfo(Stats):
 
 
 class Source(BaseModel):
+    """
+    A model describing an arbitrary local or remote source.
+    """
+
     name: str
+    """Identifier of the source (defaults to slugified uri)"""
+
     uri: str
+    """Local or remote uri of this source (via `anystore` / `fsspec`)"""
+
     scheme: str
+    """Uri scheme, is set automatically during initialization"""
+
     pandas: Playbook | None = None
+    """Pandas transformation spec (via `runpandarun`)"""
+
     data: dict | None = {}
+    """Arbitrary extra data"""
 
     def __init__(self, **data):
         data["uri"] = str(data["uri"])

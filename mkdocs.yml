@@ -1,19 +1,36 @@
 site_name: investigraph
 site_url: https://docs.investigraph.dev
-repo_url: https://github.com/investigativedata/investigraph
+repo_url: https://github.com/dataresearchcenter/investigraph
 nav:
-  - Overview: index.md
+  - Intro: index.md
   - tutorial.md
   - install.md
-  - Documentation:
-      - reference/index.md
+  - Building datasets:
+      - build/index.md
+      - build/config.md
+      - Stages:
+        - stages/seed.md
+        - stages/extract.md
+        - stages/transform.md
+        - stages/load.md
+        - stages/export.md
+      - Best practices:
+        - how-to/index.md
+        - how-to/transform.md
+        - how-to/keys.md
+        - how-to/utils.md
+  - Running datasets:
+    - Command line: run/cli.md
+    - Docker build: run/docker.md
+    - Github Actions: run/actions.md
+    - run/parallelization.md
+  - Reference:
       - reference/config.md
-      - reference/cli.md
-      - reference/extract.md
-      - reference/transform.md
-      - reference/load.md
-      - reference/aggregate.md
+      - reference/source.md
+      - Command line: reference/cli.md
+      - reference/context.md
       - reference/settings.md
+      - reference/types.md
   - Concepts:
       - concepts/catalog.md
       - concepts/dataset.md
@@ -47,6 +64,7 @@ extra:
     - icon: material/linkedin
       link: https://www.linkedin.com/company/dataresearchcenter/
 markdown_extensions:
+  - attr_list
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -61,6 +79,8 @@ markdown_extensions:
 plugins:
   - search
   - autorefs
+  - mkdocs-typer2:
+      pretty: true
   - mkdocstrings:
       default_handler: python
       handlers:

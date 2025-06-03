@@ -20,7 +20,7 @@ A dataset requires two properties, `name` and `title`, and a list of `resources`
 
 It usually has more metadata, including a summary and describing the publishing source.
 
-The full metadata for the *EC meetings* example dataset as defined in the `config.yml` [here](https://github.com/investigativedata/investigraph-datasets/blob/main/ec_meetings/config.yml):
+The full metadata for the *EC meetings* example dataset as defined in the `config.yml` [here](https://github.com/dataresearchcenter/investigraph-datasets/blob/main/ec_meetings/config.yml):
 
 ```yaml
 name: ec_meetings

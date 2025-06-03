@@ -25,6 +25,7 @@ Entities are often expressed as snippets of `JSON`, with three standard fields: 
 }
 ```
 
-Read more about it in the [Follow The Money introduction](https://followthemoney.tech/docs/)
+## Resources
 
-[Introductory workshop material](https://pad.investigativedata.org/s/0qKuBEcsM#)
+- [Follow The Money introduction (documentation)](https://followthemoney.tech/docs/)
+- [Introductory workshop material](https://pad.investigativedata.org/s/0qKuBEcsM#)

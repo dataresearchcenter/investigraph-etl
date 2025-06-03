@@ -13,6 +13,15 @@ DATA_ROOT = Path(
 
 
 class Settings(BaseSettings):
+    """
+    `investigraph` settings management using
+    [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
+
+    Note:
+        All settings can be set via environment variables (or a .env file),
+        prepending `INVESTIGRAPH_` (except for those with a different alias)
+    """
+
     model_config = SettingsConfigDict(
         env_prefix="investigraph_",
         env_nested_delimiter="_",

@@ -1,17 +1,12 @@
 from typing import Any, Generator, TypeAlias
 
-from ftmq.types import PathLike
-from nomenklatura.entity import CE
+from ftmq.types import CEGenerator
 
-# a string-keyed dict
 Record: TypeAlias = dict[str, Any]
-SDict: TypeAlias = Record  # FIXME backwards compatibility
+"""A string keyed dict"""
+
 RecordGenerator: TypeAlias = Generator[Record, None, None]
+"""A generator of [records][investigraph.types.Record]"""
 
-# composite entity generator
-CEGenerator: TypeAlias = Generator[CE, None, None]
 
-StrGenerator: TypeAlias = Generator[str, None, None]
-BytesGenerator: TypeAlias = Generator[bytes, None, None]
-
-PathLike: TypeAlias = PathLike
+__all__ = ["Record", "RecordGenerator", "CEGenerator"]

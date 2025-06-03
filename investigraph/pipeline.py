@@ -21,6 +21,7 @@ class WorkflowRun(BaseModel):
     start: datetime
     end: datetime
     entities_uri: Uri | None
+    index_uri: Uri | None
 
 
 def run(
@@ -39,14 +40,16 @@ def run(
         records = sctx.extract()
         proxies = sctx.transform(records)
         sctx.load(proxies)
-    index = None
-    if config.export.entities_uri:
-        index = ctx.export()
+    index = ctx.export()
     if config.export.index_uri:
         index = index or ctx.export()
         smart_write(config.export.index_uri, index.model_dump_json().encode())
 
     end = datetime.now()
     return WorkflowRun(
-        start=start, end=end, config=config, entities_uri=config.export.entities_uri
+        start=start,
+        end=end,
+        config=config,
+        entities_uri=config.export.entities_uri,
+        index_uri=config.export.index_uri,
     )

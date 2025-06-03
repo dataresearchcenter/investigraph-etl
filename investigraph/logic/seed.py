@@ -1,7 +1,3 @@
-"""
-Seed sources for extraction
-"""
-
 from typing import Generator
 
 from anystore.store import get_store
@@ -12,6 +8,15 @@ from investigraph.model.source import Source
 
 
 def handle(ctx: DatasetContext) -> Generator[Source, None, None]:
+    """
+    The default handler for the seed stage.
+
+    Args:
+        ctx: instance of the current `DatasetContext`
+
+    Yields:
+        Generator of `Source` objects for further processing in extract stage.
+    """
     if ctx.config.seed.uri is not None:
         store = get_store(ctx.config.seed.uri)
         globs = ensure_list(ctx.config.seed.glob) or [None]

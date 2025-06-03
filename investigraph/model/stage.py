@@ -40,11 +40,22 @@ class SeedStage(Stage):
     default_handler = settings.seeder
 
     uri: str | None = None
+    """Base uri for sources"""
+
     prefix: str | None = None
+    """Only include sources with given name prefix"""
+
     exclude_prefix: str | None = None
+    """Exclude sources with given name prefix"""
+
     glob: str | list[str] | None = None
+    """Only include sources that match this glob pattern(s)"""
+
     storage_options: dict[str, Any] | None = None
+    """Pass through kwargs to `fsspec`"""
+
     source_options: dict[str, Any] | None = None
+    """Pass through extra data to source object"""
 
 
 class ExtractStage(Stage):

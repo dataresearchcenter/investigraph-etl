@@ -1,0 +1,5 @@
+name: seed_dataset
+
+seed:
+  uri: ./tests/fixtures
+  glob: "*.json"

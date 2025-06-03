@@ -1,7 +1,3 @@
-"""
-Transform stage: map data records to ftm proxies
-"""
-
 from typing import TYPE_CHECKING
 
 from anystore.types import Uri
@@ -28,6 +24,20 @@ def map_record(
 
 
 def map_ftm(ctx: "SourceContext", record: Record, ix: int) -> CEGenerator:
+    """
+    The default handler for the transform stage. It takes a
+    [Mapping](https://followthemoney.tech/docs/mappings/) and executes it on
+    each incoming record.
+
+    Args:
+        ctx: instance of the current `SourceContext`
+        record: The record to transform, it is an arbitrary `dict[str, Any]`
+        ix: The 1-based index of this record (e.g. line number of the extracted
+            source)
+
+    Yields:
+        Generator of `nomenklatura.entity.CompositeEntity`
+    """
     for mapping in ctx.config.transform.queries:
         yield from map_record(record, mapping, ctx.config.dataset.name)
 

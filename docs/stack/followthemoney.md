@@ -12,3 +12,4 @@ FtM can be used in three contexts: as a *command-line utility*, a *Python librar
 
 - [online documentation](https://followthemoney.tech)
 - [github repository](https://github.com/alephdata/followthemoney)
+- [Introductory workshop material](https://pad.investigativedata.org/s/0qKuBEcsM#)

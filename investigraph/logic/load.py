@@ -1,7 +1,3 @@
-"""
-Load transformed data (proxy fragments) to a nomenklatura statement store
-"""
-
 from typing import TYPE_CHECKING, Iterable, TypeAlias
 
 from nomenklatura.entity import CE
@@ -15,6 +11,17 @@ TProxies: TypeAlias = Iterable[SDict]
 
 
 def handle(ctx: "DatasetContext", proxies: Iterable[CE]) -> int:
+    """
+    The default handler for the load stage. It writes the given proxies to the
+    configured store.
+
+    Args:
+        ctx: instance of the current runtime `DatasetContext`
+        proxies: Iterable of `nomenklatura.entity.CompositeEntity` items
+
+    Returns:
+        The number of entities written to the store.
+    """
     ix = 0
     with ctx.store.writer() as bulk:
         for proxy in proxies:
