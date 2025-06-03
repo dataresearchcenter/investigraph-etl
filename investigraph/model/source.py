@@ -1,7 +1,8 @@
 from urllib.parse import urlparse
 
+from anystore.decorators import anycache
 from anystore.model import Stats
-from anystore.store import get_store_for_uri
+from anystore.store import get_store, get_store_for_uri
 from anystore.util import SCHEME_FILE, ensure_uri
 from normality import slugify
 from pydantic import BaseModel
@@ -60,6 +61,9 @@ class Source(BaseModel):
             uri = absolute_path(uri, base)
         self.uri = ensure_uri(uri)
 
+    @anycache(
+        store=get_store("memory://"), key_func=lambda self: self.uri, model=SourceInfo
+    )
     def info(self) -> SourceInfo:
         store, uri = get_store_for_uri(self.uri)
         return SourceInfo(**store.info(uri).model_dump())
