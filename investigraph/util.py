@@ -5,6 +5,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from typing import Any, Callable
 
+from anystore.types import SDict
 from anystore.util import make_data_checksum
 from banal import ensure_dict
 from followthemoney.util import join_text as _join_text
@@ -16,7 +17,6 @@ from nomenklatura.entity import CE
 from normality import slugify
 
 from investigraph.exceptions import DataError
-from investigraph.types import SDict
 
 
 def slugified_dict(data: dict[Any, Any]) -> SDict:

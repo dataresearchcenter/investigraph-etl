@@ -1,13 +1,9 @@
-from typing import TYPE_CHECKING, Iterable, TypeAlias
+from typing import TYPE_CHECKING, Iterable
 
 from nomenklatura.entity import CE
 
-from investigraph.types import SDict
-
 if TYPE_CHECKING:
     from investigraph.model import DatasetContext
-
-TProxies: TypeAlias = Iterable[SDict]
 
 
 def handle(ctx: "DatasetContext", proxies: Iterable[CE]) -> int:
