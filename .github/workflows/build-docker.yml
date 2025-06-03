@@ -18,7 +18,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/investigativedata/investigraph
+          images: ghcr.io/dataresearchcenter/investigraph
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}

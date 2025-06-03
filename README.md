@@ -1,8 +1,8 @@
 [![investigraph on pypi](https://img.shields.io/pypi/v/investigraph)](https://pypi.org/project/investigraph/)
-[![Python test and package](https://github.com/investigativedata/investigraph-etl/actions/workflows/python.yml/badge.svg)](https://github.com/investigativedata/investigraph-etl/actions/workflows/python.yml)
-[![Build docker container](https://github.com/investigativedata/investigraph-etl/actions/workflows/build-docker.yml/badge.svg)](https://github.com/investigativedata/investigraph-etl/actions/workflows/build-docker.yml)
+[![Python test and package](https://github.com/dataresearchcenter/investigraph-etl/actions/workflows/python.yml/badge.svg)](https://github.com/dataresearchcenter/investigraph-etl/actions/workflows/python.yml)
+[![Build docker container](https://github.com/dataresearchcenter/investigraph-etl/actions/workflows/build-docker.yml/badge.svg)](https://github.com/dataresearchcenter/investigraph-etl/actions/workflows/build-docker.yml)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
-[![Coverage Status](https://coveralls.io/repos/github/investigativedata/investigraph-etl/badge.svg?branch=main)](https://coveralls.io/github/investigativedata/investigraph-etl?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/dataresearchcenter/investigraph-etl/badge.svg?branch=main)](https://coveralls.io/github/dataresearchcenter/investigraph-etl?branch=main)
 [![MIT License](https://img.shields.io/pypi/l/investigraph)](./LICENSE)
 
 # investigraph
@@ -11,9 +11,9 @@
 
 Using [prefect.io](https://www.prefect.io/) for ftm pipeline processing
 
-[Documentation](https://investigativedata.github.io/investigraph/)
+[Documentation](https://dataresearchcenter.github.io/investigraph/)
 
-[Tutorial](https://investigativedata.github.io/investigraph/tutorial/)
+[Tutorial](https://dataresearchcenter.github.io/investigraph/tutorial/)
 
 ## installation
 
@@ -23,13 +23,13 @@ Using [prefect.io](https://www.prefect.io/) for ftm pipeline processing
 
 ## example datasets
 
-There is a dedicated [repo](https://github.com/investigativedata/investigraph-datasets) for example datasets built with investigraph.
+There is a dedicated [repo](https://github.com/dataresearchcenter/investigraph-datasets) for example datasets built with investigraph.
 
 ## deployment
 
 ### docker
 
-`docker-compose.yml` for local development / testing, use `docker-compose.prod.yml` as a starting point for a production setup. [More instructions here](https://investigativedata.github.io/investigraph/deployment/)
+`docker-compose.yml` for local development / testing, use `docker-compose.prod.yml` as a starting point for a production setup. [More instructions here](https://dataresearchcenter.github.io/investigraph/deployment/)
 
 ## run locally
 

@@ -2,7 +2,7 @@ FROM ghcr.io/dataresearchcenter/ftmq:latest
 
 LABEL org.opencontainers.image.title="Investigraph"
 LABEL org.opencontainers.image.licenses=MIT
-LABEL org.opencontainers.image.source=https://github.com/investigativedata/investigraph
+LABEL org.opencontainers.image.source=https://github.com/dataresearchcenter/investigraph
 
 RUN apt-get update && apt-get -y upgrade
 RUN pip install -q -U pip setuptools
