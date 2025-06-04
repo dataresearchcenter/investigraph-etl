@@ -15,10 +15,9 @@ from anystore.logging import get_logger
 from anystore.store import BaseStore
 from anystore.store.virtual import open_virtual
 from anystore.types import Uri
-from anystore.util import join_relpaths, make_data_checksum
+from anystore.util import join_relpaths
 
-from investigraph.cache import get_archive_cache
-from investigraph.model.source import Source
+from investigraph.cache import get_archive_cache, make_cache_key
 from investigraph.settings import Settings
 
 settings = Settings()
@@ -33,21 +32,6 @@ def get_archive(uri: Uri | None = None) -> BaseStore:
 
 def make_archive_key(uri: Uri) -> str:
     return join_relpaths(*urlsplit(str(uri))[1:])
-
-
-def make_cache_key(url: str, *args, **kwargs) -> str | None:
-    kwargs.pop("delay", None)
-    kwargs.pop("stealthy", None)
-    kwargs.pop("timeout", None)
-    if kwargs.pop("cache", None) is False:
-        return
-    if not kwargs.pop("url_key_only", False):
-        source = Source(uri=url)
-        info = source.info()
-        if info.cache_key:
-            return make_data_checksum((url, info.cache_key, *args, kwargs))
-        return make_data_checksum((url, info.model_dump_json(), *args, kwargs))
-    return make_data_checksum((url, *args, kwargs))
 
 
 @anycache(key_func=make_cache_key, store=get_archive_cache())

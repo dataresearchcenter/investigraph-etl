@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict
 from structlog.stdlib import BoundLogger
 
 from investigraph.archive import archive_source, get_archive
-from investigraph.cache import get_runtime_cache
+from investigraph.cache import get_runtime_cache, skip_cached_source
 from investigraph.exceptions import DataError
 from investigraph.model.config import Config, get_config
 from investigraph.model.source import Source
@@ -117,12 +117,14 @@ class DatasetContext(BaseModel):
             Generator for Source model instances
         """
         ix = 0
-        for source in self.config.seed.handle(self):
-            yield SourceContext(config=self.config, source=source)
-            ix += 1
-            if limit is not None and limit > ix:
-                return
-        for source in self.config.extract.sources:
+
+        for source in (*self.config.seed.handle(self), *self.config.extract.sources):
+            cache_key = skip_cached_source(source)
+            if cache_key:
+                self.log.info(
+                    "Skipping cached source", cache_key=cache_key, source=source.uri
+                )
+                continue
             yield SourceContext(config=self.config, source=source)
             ix += 1
             if limit is not None and limit > ix:
