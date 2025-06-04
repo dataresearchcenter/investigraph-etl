@@ -18,6 +18,7 @@ from investigraph.cache import get_archive_cache, get_runtime_cache, make_cache_
 from investigraph.exceptions import DataError
 from investigraph.model.config import Config, get_config
 from investigraph.model.source import Source
+from investigraph.settings import Settings
 from investigraph.types import CEGenerator, RecordGenerator
 from investigraph.util import make_proxy
 
@@ -223,14 +224,16 @@ class SourceContext(DatasetContext):
         """
         Check if the source with the same cache key was already extracted
         """
-        cache = get_archive_cache()
-        if cache.exists(self.extract_key):
-            self.log.info(
-                "Skipping cached source",
-                cache_key=self.extract_key,
-                source=self.source.uri,
-            )
-            return False
+        settings = Settings()
+        if settings.extract_cache:
+            cache = get_archive_cache()
+            if cache.exists(self.extract_key):
+                self.log.info(
+                    "Skipping cached source",
+                    cache_key=self.extract_key,
+                    source=self.source.uri,
+                )
+                return False
         return True
 
     # STAGES
