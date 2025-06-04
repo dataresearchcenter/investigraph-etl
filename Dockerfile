@@ -10,6 +10,7 @@ RUN pip install -q -U pip setuptools
 
 RUN apt-get install -y pkg-config libicu-dev
 RUN apt-get install -y libleveldb-dev
+RUN pip install -q plyvel
 RUN pip install -q --no-binary=:pyicu: pyicu
 RUN pip install -q psycopg2-binary
 
@@ -19,7 +20,6 @@ COPY pyproject.toml /investigraph/
 COPY VERSION /investigraph/
 COPY README.md /investigraph/
 
-RUN pip install -q plyvel
 RUN pip install -q /investigraph
 
 RUN mkdir -p /data
