@@ -5,6 +5,8 @@ aggregate fragments to export
 from typing import TYPE_CHECKING
 
 from anystore import smart_write
+from anystore.io import logged_items
+from anystore.logging import get_logger
 from followthemoney.proxy import E
 from ftmq.aggregate import merge
 from ftmq.io import smart_write_proxies
@@ -18,6 +20,8 @@ if TYPE_CHECKING:
 
 from investigraph.types import CEGenerator
 
+log = get_logger(__name__)
+
 
 def proxy_merge(self: E, other: E) -> CE:
     """
@@ -29,7 +33,7 @@ def proxy_merge(self: E, other: E) -> CE:
 
 
 def get_iterator(proxies: CEGenerator, collector: Collector) -> CEGenerator:
-    for proxy in proxies:
+    for proxy in logged_items(proxies, "Export", item_name="Proxy", logger=log):
         collector.collect(proxy)
         yield proxy
 
