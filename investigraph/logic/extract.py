@@ -6,14 +6,18 @@ import numpy as np
 from runpandarun import Playbook
 from runpandarun.io import guess_handler_from_mimetype
 
+from investigraph.exceptions import ImproperlyConfigured
 from investigraph.model.context import SourceContext
 from investigraph.types import RecordGenerator
 
 
 def extract_pandas(ctx: SourceContext) -> RecordGenerator:
     play = ctx.source.pandas
-    if play is None or play.read is None:
-        raise ValueError("No playbook config")
+    if play is None:
+        raise ImproperlyConfigured("No playbook config")
+    play = play.model_copy(deep=True)
+    if play.read is None:
+        raise ImproperlyConfigured("No playbook config")
     if play.read.handler is None:
         play.read.handler = f"read_{guess_handler_from_mimetype(ctx.source.mimetype)}"
     with ctx.open() as h:
