@@ -1,4 +1,4 @@
-from functools import cache
+from functools import cache, cached_property
 from typing import IO, Any, AnyStr, ContextManager, Generator
 
 from anystore import smart_open
@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict
 from structlog.stdlib import BoundLogger
 
 from investigraph.archive import archive_source, get_archive
-from investigraph.cache import get_runtime_cache, skip_cached_source
+from investigraph.cache import get_archive_cache, get_runtime_cache, make_cache_key
 from investigraph.exceptions import DataError
 from investigraph.model.config import Config, get_config
 from investigraph.model.source import Source
@@ -116,17 +116,10 @@ class DatasetContext(BaseModel):
         Yields:
             Generator for Source model instances
         """
-        ix = 0
-
-        for source in (*self.config.seed.handle(self), *self.config.extract.sources):
-            cache_key = skip_cached_source(source)
-            if cache_key:
-                self.log.info(
-                    "Skipping cached source", cache_key=cache_key, source=source.uri
-                )
-                continue
+        for ix, source in enumerate(
+            (*self.config.seed.handle(self), *self.config.extract.sources), 1
+        ):
             yield SourceContext(config=self.config, source=source)
-            ix += 1
             if limit is not None and limit > ix:
                 return
 
@@ -214,6 +207,32 @@ class DatasetContext(BaseModel):
 class SourceContext(DatasetContext):
     source: Source
 
+    @cached_property
+    def extract_key(self) -> str:
+        """
+        The computed cache ke for extraction for the current source.
+        See [Cache][investigraph.cache]
+        """
+        key = make_cache_key(self.source.uri, use_checksum=True)
+        if not key:
+            raise ValueError(f"Empty cache key for source `{self.source.name}`")
+        return f"extracted/{self.dataset}/{key}"
+
+    @cached_property
+    def should_extract(self) -> bool:
+        """
+        Check if the source with the same cache key was already extracted
+        """
+        cache = get_archive_cache()
+        if cache.exists(self.extract_key):
+            self.log.info(
+                "Skipping cached source",
+                cache_key=self.extract_key,
+                source=self.source.uri,
+            )
+            return False
+        return True
+
     # STAGES
 
     def extract(self, limit: int | None = None) -> RecordGenerator:
@@ -228,6 +247,9 @@ class SourceContext(DatasetContext):
         Yields:
             Generator of dictionaries `dict[str, Any]` that are the extracted records.
         """
+
+        if not self.should_extract:
+            return
 
         def _records():
             for ix, record in enumerate(self.config.extract.handle(self), 1):
@@ -244,6 +266,9 @@ class SourceContext(DatasetContext):
             dataset=self.dataset,
             source=self.source.uri,
         )
+
+        cache = get_archive_cache()
+        cache.touch(self.extract_key)
 
     def transform(self, records: RecordGenerator) -> CEGenerator:
         """

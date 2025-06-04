@@ -29,6 +29,8 @@ nav:
       - reference/source.md
       - Command line: reference/cli.md
       - reference/context.md
+      - reference/archive.md
+      - reference/cache.md
       - reference/settings.md
       - reference/types.md
   - Concepts:

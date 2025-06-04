@@ -60,5 +60,8 @@ class Settings(BaseSettings):
     cache: StoreModel = StoreModel(uri="memory:///")
     """Runtime cache"""
 
+    extract_cache: bool = True
+    """Use extract cache (don't extract sources already seen)"""
+
     store_uri: str = Field(default="memory:///", alias="ftmq_store_uri")
     """Statement store for entity aggregation"""

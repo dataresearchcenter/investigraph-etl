@@ -25,12 +25,32 @@ settings = Settings()
 
 @cache
 def get_archive(uri: Uri | None = None) -> BaseStore:
+    """
+    Get the archive where to store remote files.
+
+    Set the archive via `INVESTIGRAPH_ARCHIVE_URI` (see
+    [Settings][investigraph.settings])
+
+    Args:
+        uri: Use this specific uri instead of the global setting.
+
+    Returns:
+        The archive store (see
+            [anystore](https://docs.investigraph.dev/lib/anystore))
+    """
     archive = settings.archive.model_copy()
     archive.uri = uri or archive.uri
     return archive.to_store()
 
 
 def make_archive_key(uri: Uri) -> str:
+    """
+    Make the key prefix based on a file uri.
+
+    Example:
+        >>> make_archive_key("https://example.org/files/data.pdf")
+        >>> "example.org/files/data.pdf"
+    """
     return join_relpaths(*urlsplit(str(uri))[1:])
 
 
@@ -46,7 +66,17 @@ def archive_source(
     **kwargs,
 ) -> str:
     """
-    Archive a remote file and return the local archive key
+    Archive a remote file and return the archive key
+
+    Args:
+        url_key_only: Compute cache key just by url as fallback
+        cache: Disable caching at all (force re-fetch)
+        stealthy: Use random http use agent (for http remote sources)
+        delay: Set a delay before fetching
+        raise_on_error: Throw exception or just log it.
+
+    Returns:
+        The archive lookup key.
     """
     if stealthy:
         kwargs["headers"] = kwargs.pop("headers", {})
@@ -70,7 +100,7 @@ def archive_source(
 
 
 def open(
-    url: str,
+    uri: Uri,
     url_key_only: bool | None = False,
     cache: bool | None = True,
     stealthy: bool | None = False,
@@ -79,8 +109,28 @@ def open(
     mode: str | None = None,
     **kwargs,
 ) -> ContextManager[IO[AnyStr]]:
+    """
+    Open a file from the archive as a file-like io handler. If it doesn't exist
+    in the archive, it will be stored first.
+
+    Args:
+        mode: open mode (default `rb`)
+        url_key_only: [only if file doesn't exist in archive yet] Compute cache
+            key just by url as fallback
+        cache: [only if file doesn't exist in archive yet] Disable caching at
+            all (force re-fetch)
+        stealthy: [only if file doesn't exist in archive yet] Use random http
+            use agent (for http remote sources)
+        delay: [only if file doesn't exist in archive yet] Set a delay before
+            fetching
+        raise_on_error: [only if file doesn't exist in archive yet] Throw
+            exception or just log it.
+
+    Returns:
+        The open file handler
+    """
     key = archive_source(
-        url,
+        uri,
         cache=cache,
         stealthy=stealthy,
         delay=delay,
