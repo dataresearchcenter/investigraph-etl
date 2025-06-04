@@ -17,6 +17,7 @@ from anystore.store.virtual import open_virtual
 from anystore.types import Uri
 from anystore.util import join_relpaths, make_data_checksum
 
+from investigraph.cache import get_archive_cache
 from investigraph.model.source import Source
 from investigraph.settings import Settings
 
@@ -28,13 +29,6 @@ def get_archive(uri: Uri | None = None) -> BaseStore:
     archive = settings.archive.model_copy()
     archive.uri = uri or archive.uri
     return archive.to_store()
-
-
-@cache
-def get_archive_cache(prefix: str | None = ".cache") -> BaseStore:
-    archive_cache = settings.archive.model_copy()
-    archive_cache.uri = f"{archive_cache.uri}/{prefix or '.cache'}"
-    return archive_cache.to_store()
 
 
 def make_archive_key(uri: Uri) -> str:

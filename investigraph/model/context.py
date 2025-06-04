@@ -14,18 +14,12 @@ from pydantic import BaseModel, ConfigDict
 from structlog.stdlib import BoundLogger
 
 from investigraph.archive import archive_source, get_archive
+from investigraph.cache import get_runtime_cache
 from investigraph.exceptions import DataError
 from investigraph.model.config import Config, get_config
 from investigraph.model.source import Source
-from investigraph.settings import Settings
 from investigraph.types import CEGenerator, RecordGenerator
 from investigraph.util import make_proxy
-
-
-@cache
-def get_cache() -> BaseStore:
-    settings = Settings()
-    return settings.cache.to_store()
 
 
 class DatasetContext(BaseModel):
@@ -46,7 +40,7 @@ class DatasetContext(BaseModel):
     @property
     def cache(self) -> BaseStore:
         """A shared cache instance"""
-        return get_cache()
+        return get_runtime_cache()
 
     @property
     def store(self) -> Store:
