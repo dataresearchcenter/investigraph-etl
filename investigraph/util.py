@@ -5,6 +5,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from typing import Any, Callable
 
+from anystore.io import Uri
 from anystore.types import SDict
 from anystore.util import make_data_checksum
 from banal import ensure_dict
@@ -48,9 +49,11 @@ def is_module(path: str) -> bool:
 
 
 @cache
-def get_func(path: str) -> Callable:
-    module, func = path.rsplit(":", 1)
-    if is_module(path):
+def get_func(path: Uri, base_path: Uri | None = None) -> Callable:
+    if base_path:
+        path = Path(str(base_path)) / Path(str(path))
+    module, func = str(path).rsplit(":", 1)
+    if is_module(str(path)):
         module = import_module(module)
     else:
         mpath = Path(module)
