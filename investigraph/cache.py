@@ -1,5 +1,6 @@
 from functools import cache
 
+from anystore.logging import get_logger
 from anystore.store import BaseStore
 from anystore.store.virtual import open_virtual
 from anystore.types import Uri
@@ -7,6 +8,8 @@ from anystore.util import make_data_checksum
 
 from investigraph.model.source import Source
 from investigraph.settings import Settings
+
+log = get_logger(__name__)
 
 
 @cache
@@ -73,7 +76,14 @@ def make_cache_key(uri: Uri, *args, **kwargs) -> str | None:
         if kwargs.pop("use_checksum", True):
             if "checksum" in kwargs:
                 return kwargs["checksum"]
-            with open_virtual(uri) as fh:
-                return fh.checksum
+            try:
+                with open_virtual(uri) as fh:
+                    return fh.checksum
+            except Exception as e:
+                log.warn(
+                    f"Cannot calculate checksum: `{e.__class__.__name__}`: {e}",
+                    uri=uri,
+                    **kwargs,
+                )
         return make_data_checksum((uri, info.model_dump_json(), *args, kwargs))
     return make_data_checksum((uri, *args, kwargs))

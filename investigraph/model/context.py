@@ -398,6 +398,8 @@ def get_source_context(config_uri: Uri, source_name: str) -> SourceContext:
     for source in config.extract.sources:
         if source.name == source_name:
             return SourceContext(config=config, source=source)
+    if len(config.extract.sources) == 1:
+        return SourceContext(config=config, source=config.extract.sources[0])
     raise ValueError(f"Source not found: `{source_name}`")
 
 

@@ -11,6 +11,7 @@ from typing import IO, AnyStr, ContextManager
 from urllib.parse import urlsplit
 
 from anystore import anycache
+from anystore.decorators import error_handler
 from anystore.logging import get_logger
 from anystore.store import BaseStore
 from anystore.store.virtual import open_virtual
@@ -55,6 +56,7 @@ def make_archive_key(uri: Uri) -> str:
 
 
 @anycache(key_func=make_cache_key, store=get_archive_cache())
+@error_handler(max_retries=3)
 def archive_source(
     uri: Uri,
     *args,
