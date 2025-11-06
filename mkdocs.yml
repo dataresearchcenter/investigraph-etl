@@ -15,10 +15,11 @@ nav:
         - stages/load.md
         - stages/export.md
       - Best practices:
-        - how-to/index.md
-        - how-to/transform.md
-        - how-to/keys.md
-        - how-to/utils.md
+        - Overview: how-to/index.md
+        - Dataset metadata: how-to/metadata.md
+        - Transform patterns: how-to/transform.md
+        - Entity keys: how-to/keys.md
+        - Utility functions: how-to/utils.md
   - Running datasets:
     - Command line: run/cli.md
     - Docker build: run/docker.md
