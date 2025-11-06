@@ -283,36 +283,6 @@ def handle(ctx, record, ix):
     yield entity
 ```
 
-## List processing
-
-### Splitting delimited values
-
-```python
-def split_values(value, delimiter=";"):
-    """Split delimited string into list of values"""
-    if not value:
-        return []
-
-    # Split and clean
-    values = [v.strip() for v in value.split(delimiter)]
-
-    # Filter empty
-    return [v for v in values if v]
-
-
-def handle(ctx, record, ix):
-    entity = ctx.make_entity("Person")
-    entity.id = ctx.make_slug(record["id"])
-    entity.add("name", record["name"])
-
-    # Handle multiple values
-    aliases = split_values(record.get("aliases", ""))
-    for alias in aliases:
-        entity.add("alias", alias)
-
-    yield entity
-```
-
 ## Error handling
 
 ### Graceful degradation
@@ -338,46 +308,6 @@ def handle(ctx, record, ix):
 ```
 
 ## Advanced patterns
-
-### Zipping parallel lists
-
-Handle parallel lists that need to be matched up (from EC meetings fixture):
-
-```python
-from typing import Generator
-
-def zip_things(
-    things1: str, things2: str, scream: bool = False
-) -> Generator[tuple[str, str], None, None]:
-    """Zip two comma-separated lists together"""
-    t1 = [t.strip() for t in things1.split(",")]
-    t2 = [t.strip() for t in things2.split(",")]
-
-    if len(t1) == len(t2):
-        # Equal length - zip normally
-        yield from zip(t1, t2)
-    elif len(t2) == 1:
-        # Single value in t2 - pair with full t1
-        yield things1, things2
-    else:
-        # Mismatched lengths
-        if scream:
-            raise ValueError(f"Unable to zip: {things1} | {things2}")
-
-
-def handle(ctx, record, ix):
-    # Match names with roles
-    for name, role in zip_things(
-        record.get("names", ""),
-        record.get("roles", ""),
-        scream=True
-    ):
-        person = ctx.make_entity("Person")
-        person.id = ctx.make_fingerprint_id(name)
-        person.add("name", name)
-        person.add("position", role)
-        yield person
-```
 
 ### Entity factories
 
@@ -478,26 +408,6 @@ def handle(ctx, record, ix):
     yield organizer
     yield from make_event(ctx, record, organizer, persons)
     yield from persons
-```
-
-### Using zavod utilities
-
-Investigraph is compatible with zavod utilities:
-
-```python
-from zavod.util import join_slug
-
-def handle(ctx, record, ix):
-    # Use zavod's join_slug (similar to ctx.make_slug)
-    slug = record.pop("url_slug")
-    id_ = join_slug(ctx.prefix, slug)
-
-    entity = ctx.make_entity("PublicBody", id_)
-    entity.add("name", record.pop("name"))
-    entity.add("website", record.pop("homepage"))
-    entity.add("jurisdiction", "eu")
-
-    yield entity
 ```
 
 ### Safe string conversion
