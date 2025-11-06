@@ -78,13 +78,13 @@ from investigraph.types import Record
 from investigraph.model import SourceContext
 
 def parse(ctx: SourceContext, record: Record, ix: int):
-    proxy = ctx.make_proxy("Organization", record.pop("Id"))  # schema, id
+    proxy = ctx.make_entity("Organization", record.pop("Id"))  # schema, id
     proxy.add("name", record.pop("Name"))
     # add more property data ...
     yield proxy
 ```
 
-The util function [`make_proxy`][investigraph.model.DatasetContext.make_proxy] creates an [entity](../concepts/entity.md), which is implemented in `nomenklatura.entity.CompositeEntity`, with the schema "Organization".
+The util function [`make_entity`][investigraph.model.DatasetContext.make_entity] creates an [entity](../concepts/entity.md), which is implemented in `nomenklatura.entity.CompositeEntity`, with the schema "Organization".
 
 Then, following the [ftm python api](https://followthemoney.tech/docs/api/), properties can be added via `proxy.add(<prop>, <value>)`
 

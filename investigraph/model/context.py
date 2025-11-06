@@ -4,12 +4,13 @@ from typing import IO, Any, AnyStr, ContextManager, Generator
 from anystore import smart_open
 from anystore.io import DEFAULT_MODE, Uri, get_logger, logged_items
 from anystore.store import BaseStore
+from followthemoney import StatementEntity
 from followthemoney.util import make_entity_id
 from ftmq.aggregate import merge
 from ftmq.model import Dataset
 from ftmq.store import Store, get_store
+from ftmq.types import StatementEntities
 from ftmq.util import join_slug, make_fingerprint_id
-from nomenklatura.entity import CE, CompositeEntity
 from pydantic import BaseModel, ConfigDict
 from structlog.stdlib import BoundLogger
 
@@ -19,8 +20,8 @@ from investigraph.exceptions import DataError
 from investigraph.model.config import Config, get_config
 from investigraph.model.source import Source
 from investigraph.settings import Settings
-from investigraph.types import CEGenerator, RecordGenerator
-from investigraph.util import make_proxy
+from investigraph.types import RecordGenerator
+from investigraph.util import make_entity
 
 
 class DatasetContext(BaseModel):
@@ -43,10 +44,10 @@ class DatasetContext(BaseModel):
         """A shared cache instance"""
         return get_runtime_cache()
 
-    @property
+    @cached_property
     def store(self) -> Store:
         """The statement store instance to write fragments to"""
-        return get_store(self.config.load.uri)
+        return get_store(self.config.load.uri, dataset=self.config.dataset.name)
 
     @property
     def log(self) -> BoundLogger:
@@ -70,13 +71,13 @@ class DatasetContext(BaseModel):
                     break
                 yield rec
 
-    def load(self, proxies: CEGenerator, *args, **kwargs) -> int:
+    def load(self, proxies: StatementEntities, *args, **kwargs) -> int:
         """
         Load transformed records with the configured handler.
         Defaults to [`investigraph.logic.load:handle`][investigraph.logic.load]
 
         Args:
-            proxies: Generator of `nomenklatura.entity.CompositeEntity` instances
+            proxies: Generator of StatementEntity instances
 
         Returns:
             Number of entities loaded to store
@@ -126,14 +127,14 @@ class DatasetContext(BaseModel):
 
     # RUNTIME HELPERS
 
-    def make_proxy(self, schema: str, *args, **kwargs) -> CE:
+    def make_entity(self, schema: str, *args, **kwargs) -> StatementEntity:
         """
-        Instantiate a new `CompositeEntity` with its schema and optional data.
+        Instantiate a new Entity with its schema and optional data.
 
         Example:
             ```python
             def transform(ctx, record, ix):
-                proxy = ctx.make_proxy("Company")
+                proxy = ctx.make_entity("Company")
                 proxy.id = f"c-{ix}"
                 proxy.add("name", record["name"])
             ```
@@ -142,9 +143,9 @@ class DatasetContext(BaseModel):
             schema: [FollowTheMoney schema](https://followthemoney.tech/explorer/)
 
         Returns:
-            instance of `nomenklatura.entity.CompositeEntity`
+            instance of StatementEntity
         """
-        return make_proxy(schema, *args, dataset=self.dataset, **kwargs)
+        return make_entity(schema, *args, dataset=self.dataset, **kwargs)
 
     def make_slug(self, *args, **kwargs) -> str:
         """
@@ -273,7 +274,7 @@ class SourceContext(DatasetContext):
         cache = get_archive_cache()
         cache.touch(self.extract_key)
 
-    def transform(self, records: RecordGenerator) -> CEGenerator:
+    def transform(self, records: RecordGenerator) -> StatementEntities:
         """
         Transform extracted records from the current source into FollowTheMoney
         entities with the configured handler.
@@ -283,7 +284,7 @@ class SourceContext(DatasetContext):
             records: Generator of record items as `dict[str, Any]`
 
         Yields:
-            Generator of `nomenklatura.entity.CompositeEntity`
+            Generator of StatementEntity
         """
 
         def _proxies():
@@ -354,24 +355,24 @@ class SourceContext(DatasetContext):
 class TaskContext(SourceContext):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    proxies: dict[str, CompositeEntity] = {}
+    proxies: dict[str, StatementEntity] = {}
     data: dict[str, Any] = {}
 
-    def __iter__(self) -> CEGenerator:
+    def __iter__(self) -> StatementEntities:
         yield from self.proxies.values()
 
-    def emit(self, *proxies: CE | None) -> None:
+    def emit(self, *proxies: StatementEntity | None) -> None:
         """
-        Emit `nomenklatura.entity.CompositeEntity` instances during task
+        Emit Entity instances during task
         runtime. The entities will already be merged. This is useful for helper
         functions within transform logic that create multiple entities "on the
         fly"
 
         Example:
             ```python
-            def make_person(ctx: TaskContext, record: dict[str, Any]) -> CE:
-                person = ctx.make_proxy("Person", id=1, name="Jane Doe")
-                note = ctx.make_proxy("Note", id="note-1", entity=person)
+            def make_person(ctx: TaskContext, record: dict[str, Any]) -> E:
+                person = ctx.make_entity("Person", id=1, name="Jane Doe")
+                note = ctx.make_entity("Note", id="note-1", entity=person)
 
                 # make sure the note entity is emitted as we are only returning
                 # the person entity:

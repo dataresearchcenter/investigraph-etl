@@ -63,5 +63,5 @@ class Settings(BaseSettings):
     extract_cache: bool = True
     """Use extract cache (don't extract sources already seen)"""
 
-    store_uri: str = Field(default="memory:///", alias="ftmq_store_uri")
+    store_uri: str = Field(default="memory:///", alias="ftm_statement_store")
     """Statement store for entity aggregation"""

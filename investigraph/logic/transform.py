@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING
 
 from anystore.types import Uri
+from followthemoney import StatementEntity
+from ftmq.types import StatementEntities
 
 from investigraph.model.context import get_source_context
 from investigraph.model.mapping import QueryMapping
@@ -8,22 +10,23 @@ from investigraph.model.mapping import QueryMapping
 if TYPE_CHECKING:
     from investigraph.model import SourceContext
 
-from ftmq.util import make_proxy
+from ftmq.util import make_entity
 
-from investigraph.types import CEGenerator, Record
+from investigraph.types import Record
 
 
 def map_record(
     record: Record, mapping: QueryMapping, dataset: str | None = "default"
-) -> CEGenerator:
+) -> StatementEntities:
     _mapping = mapping.get_mapping()
     if _mapping.source.check_filters(record):
         entities = _mapping.map(record)
         for proxy in entities.values():
-            yield make_proxy(proxy.to_dict(), dataset=dataset)
+            # Use new ftmq API: make_entity(data, entity_type, default_dataset)
+            yield make_entity(proxy.to_dict(), StatementEntity, dataset)
 
 
-def map_ftm(ctx: "SourceContext", record: Record, ix: int) -> CEGenerator:
+def map_ftm(ctx: "SourceContext", record: Record, ix: int) -> StatementEntities:
     """
     The default handler for the transform stage. It takes a
     [Mapping](https://followthemoney.tech/docs/mappings/) and executes it on
@@ -36,12 +39,12 @@ def map_ftm(ctx: "SourceContext", record: Record, ix: int) -> CEGenerator:
             source)
 
     Yields:
-        Generator of `nomenklatura.entity.CompositeEntity`
+        Generator of `StatementEntity` instances
     """
     for mapping in ctx.config.transform.queries:
         yield from map_record(record, mapping, ctx.config.dataset.name)
 
 
-def transform_record(config_uri: Uri, record: Record, ix: int) -> CEGenerator:
+def transform_record(config_uri: Uri, record: Record, ix: int) -> StatementEntities:
     sctx = get_source_context(config_uri, record.pop("__source__"))
     yield from sctx.config.transform.handle(sctx, record, ix)

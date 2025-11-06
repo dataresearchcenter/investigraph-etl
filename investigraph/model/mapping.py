@@ -1,9 +1,13 @@
 from functools import cache
+from typing import TypeAlias
 
 from followthemoney import model
 from followthemoney.mapping.query import QueryMapping as _QueryMapping
-from ftmq.types import Properties, Schemata
 from pydantic import BaseModel, Field
+
+# Type aliases for schema and property names (strings)
+Schemata: TypeAlias = str
+Properties: TypeAlias = str
 
 
 class PropertyMapping(BaseModel):

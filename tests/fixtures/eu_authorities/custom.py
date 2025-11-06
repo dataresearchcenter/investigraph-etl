@@ -5,7 +5,7 @@ from investigraph.types import Record
 def parse_record(ctx: SourceContext, record: Record, ix: int):
     slug = record.pop("URL name")
     id_ = ctx.make_slug(slug)
-    body = ctx.make_proxy("PublicBody", id_)
+    body = ctx.make_entity("PublicBody", id_)
     body.add("name", record.pop("Name"))
     body.add("weakAlias", record.pop("Short name"))
     tags = record.pop("Tags").split()

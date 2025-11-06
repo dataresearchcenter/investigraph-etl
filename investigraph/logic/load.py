@@ -1,19 +1,19 @@
 from typing import TYPE_CHECKING, Iterable
 
-from nomenklatura.entity import CE
+from followthemoney import StatementEntity
 
 if TYPE_CHECKING:
     from investigraph.model import DatasetContext
 
 
-def handle(ctx: "DatasetContext", proxies: Iterable[CE]) -> int:
+def handle(ctx: "DatasetContext", proxies: Iterable[StatementEntity]) -> int:
     """
     The default handler for the load stage. It writes the given proxies to the
     configured store.
 
     Args:
         ctx: instance of the current runtime `DatasetContext`
-        proxies: Iterable of `nomenklatura.entity.CompositeEntity` items
+        proxies: Iterable of `StatementEntity`
 
     Returns:
         The number of entities written to the store.

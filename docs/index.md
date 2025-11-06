@@ -35,7 +35,7 @@ For most common data source formats, this process is possible without programmin
 - Access to a public (open source) data library operated by the [Data and Research Center](https://dataresearchcenter.org/library) and [OpenSanctions](https://opensanctions.org/datasets)
 
 ## Github repositories
-- [investigraph-etl](https://github.com/dataresearchcenter/investigraph-etl) - etl style pipeline framework for followthemoney data based on [prefect.io](https://prefect.io)
+- [investigraph-etl](https://github.com/dataresearchcenter/investigraph-etl) - ETL pipeline framework for FollowTheMoney data
 - [investigraph-eu](https://github.com/dataresearchcenter/investigraph-eu) - Catalog of european datasets powered by investigraph
 - [runpandarun](https://github.com/simonwoerpel/runpandarun) - A simple interface written in python for reproducible i/o workflows around tabular data via [pandas](https://pandas.pydata.org/)
 - [ftmq](https://github.com/dataresearchcenter/ftmq) - An attempt towards a [followthemoney](https://github.com/alephdata/followthemoney) query dsl

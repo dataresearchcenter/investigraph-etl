@@ -9,12 +9,15 @@ from anystore.io import Uri
 from anystore.types import SDict
 from anystore.util import make_data_checksum
 from banal import ensure_dict
+from followthemoney import StatementEntity
 from followthemoney.util import join_text as _join_text
-from ftmq.util import clean_name, make_fingerprint, make_fingerprint_id
-from ftmq.util import make_proxy as _make_proxy
-from ftmq.util import make_string_id
-from nomenklatura.dataset import DefaultDataset
-from nomenklatura.entity import CE
+from ftmq.util import (
+    clean_name,
+    make_dataset,
+    make_fingerprint,
+    make_fingerprint_id,
+    make_string_id,
+)
 from normality import slugify
 
 from investigraph.exceptions import DataError
@@ -24,20 +27,22 @@ def slugified_dict(data: dict[Any, Any]) -> SDict:
     return {str(slugify(k, "_")): v for k, v in ensure_dict(data).items()}
 
 
-def make_proxy(
+def make_entity(
     schema: str,
     id: str | None = None,
     dataset: str | None = None,
     **properties,
-) -> CE:
+) -> StatementEntity:
     if properties and not id:
         raise DataError("Specify Entity ID when using properties kwargs!")
-    data = {"id": id, "schema": schema}
-    proxy = _make_proxy(data, dataset or DefaultDataset)
+
+    entity = StatementEntity.from_dict(
+        {"id": id, "schema": schema}, default_dataset=make_dataset(dataset)
+    )
     # add the property values via this api to ensure type checking & cleaning
     for k, v in properties.items():
-        proxy.add(k, v)
-    return proxy
+        entity.add(k, v)
+    return entity
 
 
 module_re = re.compile(r"^[\w\.]+:[\w]+")
@@ -88,7 +93,7 @@ __all__ = [
     "make_string_id",
     "make_fingerprint",
     "make_fingerprint_id",
-    "make_proxy",
+    "make_entity",
     "make_data_checksum",
     "str_or_none",
     "join_text",

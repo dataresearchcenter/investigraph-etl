@@ -1,10 +1,8 @@
 # Tutorial
 
-**investigraph** tries to automate as many functionality for different stages (extract, transform, load) as possible with no coding required.
+**investigraph** is a framework for extracting data from sources and transforming it into the [FollowTheMoney](https://followthemoney.tech) format. This format is used for representing entities (people, companies, organizations) and their relationships.
 
-The only thing you have to manage by yourself is the **dataset configuration**, which, in the easiest scenario, is just a `YAML` file that contains a bit of metadata and pipeline instructions.
-
-The following tutorial is a simple setup on your local machine and only requires recent python >= 3.11.
+This tutorial shows you how to build a simple dataset without writing Python code - just YAML configuration. You'll need Python 3.11 or higher.
 
 ## 1. Installation
 
@@ -22,23 +20,21 @@ After completion, verify that **investigraph** is installed:
 investigraph --help
 ```
 
-## 2. Create a dataset definition
+## 2. Create a dataset
 
-Let's start with a simple, public available dataset: [The Global Database of Humanitarian Organisations](https://www.humanitarianoutcomes.org/gdho/search). It's just a list of, yes, humanitarian organisations.
+We'll use [The Global Database of Humanitarian Organisations](https://www.humanitarianoutcomes.org/gdho/search) as an example - a list of humanitarian organizations worldwide.
 
-### Metadata
+### Setup
 
-Every dataset needs a unique identifier, called `name` (or `foreign_id` in [OpenAleph](https://openaleph.org)). By convention, we use this identifier as well in the directory structure as a sub-folder. Let's use `gdho` here. We will reference this dataset always with this identifier.
+Every dataset needs a unique identifier (`name`). We'll use `gdho` for this dataset.
 
-Create a subfolder:
+Create a directory and config file:
 
-    mkdir -p datasets/gdho
+```bash
+mkdir -p datasets/gdho
+```
 
-Create the configuration file with the editor of your choice. The path to the file (by convention) should be:
-
-    datasets/gdho/config.yml
-
-Enter the identifier and a bit of metadata into the file:
+Create `datasets/gdho/config.yml` with basic metadata:
 
 ```yaml
 name: gdho
@@ -48,11 +44,9 @@ publisher:
   url: https://www.humanitarianoutcomes.org
 ```
 
-That's enough metadata for now, there is a lot more metadata possible which is covered in the documentation.
+### Add a data source
 
-### Sources
-
-The most interesting part of course is the pipeline definition! We have at least to provide a source:
+Next, specify where to fetch the data from:
 
 ```yaml
 # metadata ...
@@ -61,11 +55,9 @@ extract:
     - uri: <url>
 ```
 
-We need to find out the remote url we want to fetch. So, open the [landing page](https://www.humanitarianoutcomes.org/gdho/search) from the GDHO dataset.
+The GDHO website has a "DOWNLOAD CSV" link that provides the data: [https://www.humanitarianoutcomes.org/gdho/search/results?format=csv](https://www.humanitarianoutcomes.org/gdho/search/results?format=csv)
 
-When clicking on "VIEW ALL DATA", it will open [this page](https://www.humanitarianoutcomes.org/gdho/search). And, great! There is a direct link to "DOWNLOAD CSV" which actually returns data in csv format: [https://www.humanitarianoutcomes.org/gdho/search/results?format=csv](https://www.humanitarianoutcomes.org/gdho/search/results?format=csv)
-
-We can just add this url to our source configuration:
+Add this URL to the config:
 
 ```yaml
 # metadata ...
@@ -74,21 +66,13 @@ extract:
     - uri: https://www.humanitarianoutcomes.org/gdho/search/results?format=csv
 ```
 
-**investigraph** allows to interactively inspect your building blocks or stages for datasets, so let's try if the configuration file contains any errors:
+Test the extraction with:
 
-    investigraph inspect -c ./datasets/gdho/config.yml
+```bash
+investigraph extract -c ./datasets/gdho/config.yml -l 10
+```
 
-This will show an error about no parsing function defined, but we will fix that later.
-
-We can inspect the outcome of the _extract_ stage for our remote source as well (the `-l` option sets a limit to show only 10 records):
-
-    investigraph extract -c ./datasets/gdho/config.yml -l 10
-
-Ooops! This shows us a python exception saying something about `utf-8` error. Yeah, we still have that in 2023.
-
-When downloading this csv file manually and opening in a spreadsheet application, you will actually notice that it is in `latin` encoding and has 1 empty row at the top. 🤦 (welcome to real world data)
-
-Under the hood, **investigraph** is using [pandas.read_csv](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html#pandas.read_csv) and there is an option `pandas` to pass instructions to pandas on how to read this csv. In this case, it would look like this (refer to the `pandas` documentation for all options):
+This will likely fail with a `utf-8` encoding error. The CSV file uses `latin` encoding and has an empty row at the top. Fix this by adding pandas options (investigraph uses [pandas.read_csv](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html) internally):
 
 
 ```yaml
@@ -103,21 +87,17 @@ extract:
             skiprows: 1
 ```
 
-Now **investigraph** is able to fetch and parse the csv source:
+Now extraction should work:
 
-    investigraph extract -c ./datasets/gdho/config.yml -l 10
+```bash
+investigraph extract -c ./datasets/gdho/config.yml -l 10
+```
 
-### Transform data
+### Transform to FollowTheMoney entities
 
-This is the core functionality of this whole thing: Transform extracted source data into the [followthemoney](https://followthemoney.tech) model.
+The core step is transforming CSV data into [FollowTheMoney](https://followthemoney.tech) entities. Define a mapping from CSV columns to entity properties.
 
-The easiest way is to define a mapping of csv columns to ftm properties, [as described in the FollowTheMoney documentation](https://followthemoney.tech/docs/mappings/).
-
-The format in **investigraph**s `config.yml` aligns with the ftm mapping spec, so you could use any existing mapping here as well.
-
-For the `gdho` dataset, we want to create [Organization](https://followthemoney.tech/explorer/schemata/Organization/) entities and map the name column to the name property.
-
-Add this mapping spec to the `config.yml` (the csv column with the name is called `Name`, so this is a no-brainer):
+For GDHO, we'll create [Organization](https://followthemoney.tech/explorer/schemata/Organization/) entities:
 
 ```yaml
 # metadata ...
@@ -134,13 +114,13 @@ transform:
               column: Name
 ```
 
-You can inspect the transformation like this:
+Test the transformation:
 
-    investigraph extract -c datasets/gdho/config.yml -l 10 | investigraph transform -c datasets/gdho/config.yml
+```bash
+investigraph extract -c datasets/gdho/config.yml -l 10 | investigraph transform -c datasets/gdho/config.yml
+```
 
-Yay – it is returning some [FtM entities](./concepts/entity.md) 🎉
-
-In the source data is a lot more metadata about the organizations. Refer to the [FtM mapping documentation](https://followthemoney.tech/docs/mappings/) on how to map data. Let's add the organizations website to the `properties` key:
+This outputs FollowTheMoney entities in JSON format. Add more fields by mapping additional CSV columns:
 
 ```yaml
 # metadata ...
@@ -159,11 +139,9 @@ transform:
               column: Website
 ```
 
-Inspect again, and the entities now have the `website` property.
+### Complete configuration
 
-### The complete config.yml
-
-Adding in a bit more metadata and property mappings:
+Here's the full config with all fields mapped:
 
 ```yaml
 name: gdho
@@ -225,41 +203,42 @@ transform:
 
 ## 3. Run the pipeline
 
-To actually run the pipeline within the **investigraph framework**, execute a complete run:
+Execute the full pipeline (extract, transform, load):
 
-    investigraph run -c datasets/gdho/config.yml
+```bash
+investigraph run -c datasets/gdho/config.yml
+```
 
-Voilà, you just transformed the whole gdho database into FtM entities! You may notice, that this execution created a new subfolder in the current working directory named `data/gdho` where you find the data output of this process.
+This creates a `data/gdho/` directory with the output files containing FollowTheMoney entities.
 
-## Optional: use python code to transform data
+## Advanced: Custom Python code
 
-Instead of writing the FtM mapping in the `config.yml`, which can be a bit limiting for advanced use cases, you can instead write arbitrary python code. The code needs to live anywhere relatively to the `config.yml`, e.g. next to it in a file `transform.py`. In it, write your own _transform_ (or _extract_, or _load_) function.
-
-To transform the records within python and achieve the same result for the `gdho` dataset, an example script would look like this:
+For complex transformations beyond YAML mappings, write custom Python code. Create `datasets/gdho/transform.py`:
 
 ```python
 def handle(ctx, record, ix):
-    proxy = ctx.make_proxy("Organization")
+    proxy = ctx.make_entity("Organization")
     proxy.id = record.pop("Id")
     proxy.add("name", record.pop("Name"))
     # add more property data ...
     yield proxy
 ```
 
-Now, tell the `transform` key in the `config.yml` to use this python file instead of the defined mapping:
+Update `config.yml` to use the Python handler:
 
 ```yaml
 # metadata ...
 # extract ...
 transform:
-  queries: # ...
   handler: ./transform.py:handle
 ```
 
-After it, run the pipeline:
+Run the pipeline:
 
-    investigraph run -c ./datasets/gdho/config.yml
+```bash
+investigraph run -c ./datasets/gdho/config.yml
+```
 
-## Conclusion
+## Next Steps
 
-We have shown how we can extract a datasource without the need to write any python code, just with yaml specifications. [Head on to the documentation](./build/index.md) to dive deeper into **investigraph**.
+You can extract most data sources using only YAML configuration. For complex transformations, use custom Python code. See the [full documentation](./build/index.md) for more details.

@@ -15,10 +15,11 @@ classifiers = [
 ]
 requires-python = ">=3.11,<4"
 dependencies = [
-    "anystore @ git+https://github.com/investigativedata/anystore.git@develop",
-    "ftmq @ git+https://github.com/investigativedata/ftmq.git@develop",
-    "runpandarun (>=0.5.5,<0.6.0)",
+    "anystore (>=0.4.0,<0.5.0)",
+    "ftmq @ git+https://github.com/dataresearchcenter/ftmq.git",
+    "runpandarun (>=0.6.0,<0.7.0)",
     "dateparser (>=1.2.1,<2.0.0)",
+    "followthemoney (>=4.3.2,<5.0.0)",
 ]
 
 [project.optional-dependencies]
@@ -53,6 +54,9 @@ griffe-pydantic = "^1.1.0"
 mkdocs = "^1.6.1"
 mkdocs-typer2 = "^0.1.4"
 
+
+[tool.poetry.dependencies]
+ftmq = {develop = true}
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

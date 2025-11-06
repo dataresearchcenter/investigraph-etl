@@ -7,32 +7,33 @@ from typing import TYPE_CHECKING
 from anystore import smart_write
 from anystore.io import logged_items
 from anystore.logging import get_logger
+from followthemoney import StatementEntity
 from followthemoney.proxy import E
 from ftmq.aggregate import merge
 from ftmq.io import smart_write_proxies
 from ftmq.model import Dataset
-from ftmq.model.coverage import Collector
-from ftmq.types import CE
-from ftmq.util import make_proxy
+from ftmq.model.stats import Collector
+from ftmq.types import StatementEntities
+from ftmq.util import make_entity
 
 if TYPE_CHECKING:
     from investigraph.model import DatasetContext
 
-from investigraph.types import CEGenerator
-
 log = get_logger(__name__)
 
 
-def proxy_merge(self: E, other: E) -> CE:
+def proxy_merge(self: E, other: E) -> E:
     """
     Used to override `EntityProxy.merge` in `investigraph.__init__.py`
     """
     return merge(
-        make_proxy(self.to_dict()), make_proxy(other.to_dict()), downgrade=True
+        make_entity(self.to_dict(), StatementEntity),
+        make_entity(other.to_dict(), StatementEntity),
+        downgrade=True,
     )
 
 
-def get_iterator(proxies: CEGenerator, collector: Collector) -> CEGenerator:
+def get_iterator(proxies: StatementEntities, collector: Collector) -> StatementEntities:
     for proxy in logged_items(proxies, "Export", item_name="Proxy", logger=log):
         collector.collect(proxy)
         yield proxy

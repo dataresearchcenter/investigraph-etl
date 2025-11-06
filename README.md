@@ -7,9 +7,7 @@
 
 # investigraph
 
-**Research and implementation of an ETL process for a curated and up-to-date public and open-source data catalog of frequently used datasets in investigative journalism.**
-
-Using [prefect.io](https://www.prefect.io/) for ftm pipeline processing
+**An ETL framework for building datasets in the [FollowTheMoney](https://followthemoney.tech) format for investigative journalism and research.**
 
 [Documentation](https://dataresearchcenter.github.io/investigraph/)
 
@@ -48,10 +46,6 @@ After installation, `investigraph` as a command should be available:
 Quick run a local dataset definition:
 
     investigraph run -c ./path/to/config.yml
-
-View prefect dashboard:
-
-    make server
 
 ## development
 
