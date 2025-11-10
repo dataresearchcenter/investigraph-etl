@@ -26,6 +26,7 @@ nav:
     - Github Actions: run/actions.md
     - run/parallelization.md
   - Reference:
+      - reference/helpers.md
       - reference/config.md
       - reference/source.md
       - Command line: reference/cli.md

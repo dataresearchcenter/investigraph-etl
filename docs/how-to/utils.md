@@ -433,7 +433,133 @@ def handle(ctx, record, ix):
     yield entity
 ```
 
+## Helper modules
+
+### Address handling
+
+The `investigraph.helpers.addresses` module provides utilities for building and formatting address entities with country-specific logic.
+
+#### Creating address entities
+
+Use `make_address` to create structured address entities:
+
+```python
+from investigraph.helpers.addresses import make_address, assign_address
+
+def handle(ctx, record, ix):
+    entity = ctx.make_entity("Organization")
+    entity.id = ctx.make_slug(record["id"])
+    entity.add("name", record["name"])
+
+    # Create address entity from components
+    address = make_address(
+        context=ctx,
+        street=record.get("street"),
+        city=record.get("city"),
+        postal_code=record.get("zip"),
+        country_code=record.get("country_code")
+    )
+
+    # Assign address to entity
+    if address:
+        assign_address(entity, address)
+        yield address
+
+    yield entity
+```
+
+#### Using full addresses
+
+Pass a complete address string:
+
+```python
+def handle(ctx, record, ix):
+    entity = ctx.make_entity("Person")
+    entity.id = ctx.make_slug(record["id"])
+    entity.add("name", record["name"])
+
+    # Create from full address string
+    address = make_address(
+        context=ctx,
+        full=record.get("address"),
+        country_code=record.get("country")
+    )
+
+    if address:
+        assign_address(entity, address)
+        yield address
+
+    yield entity
+```
+
+#### Formatting addresses
+
+Use `format_address` to format address components into a single line:
+
+```python
+from investigraph.helpers.addresses import format_address
+
+def handle(ctx, record, ix):
+    # Format address components using country-specific templates
+    formatted = format_address(
+        street=record.get("street"),
+        house_number=record.get("house_no"),
+        postal_code=record.get("zip"),
+        city=record.get("city"),
+        state=record.get("state"),
+        country_code=record.get("country")
+    )
+
+    entity = ctx.make_entity("Company")
+    entity.id = ctx.make_slug(record["id"])
+    entity.add("name", record["name"])
+    entity.add("address", formatted)
+
+    yield entity
+```
+
+#### Complex address scenarios
+
+Handle multiple street lines and additional details:
+
+```python
+def handle(ctx, record, ix):
+    entity = ctx.make_entity("Organization")
+    entity.id = ctx.make_slug(record["id"])
+    entity.add("name", record["name"])
+
+    # Multi-line street addresses with PO box
+    address = make_address(
+        context=ctx,
+        summary=record.get("address_type"),  # e.g., "Headquarters"
+        po_box=record.get("po_box"),
+        street=record.get("street_1"),
+        street2=record.get("street_2"),
+        street3=record.get("street_3"),
+        city=record.get("city"),
+        region=record.get("region"),
+        state=record.get("state"),
+        postal_code=record.get("postal_code"),
+        country=record.get("country_name"),
+        country_code=record.get("country_code"),
+        remarks=record.get("delivery_notes"),
+        lang="en"
+    )
+
+    if address:
+        assign_address(entity, address)
+        yield address
+
+    yield entity
+```
+
 ## Available utilities reference
+
+### From `investigraph.helpers.addresses`
+
+- `make_address(context, full, street, city, postal_code, country_code, ...)` - Create Address entity from components
+- `assign_address(entity, address)` - Assign address to entity with proper linking
+- `format_address(street, city, postal_code, country_code, ...)` - Format address components into single line
 
 ### From `investigraph.util`
 
@@ -473,6 +599,7 @@ def handle(ctx, record, ix):
 
 ## Further reading
 
+- [Helpers API reference](../reference/helpers.md) - Full helpers module API documentation
 - [Transform patterns](transform.md) - Using utilities in transform handlers
 - [Entity keys and IDs](keys.md) - ID generation utilities
 - [Context API reference](../reference/context.md) - Full context API
