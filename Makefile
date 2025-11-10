@@ -32,4 +32,4 @@ clean:
 
 documentation:
 	mkdocs build
-	aws --profile nbg1 --endpoint-url https://s3.investigativedata.org s3 sync ./site s3://docs.investigraph.dev
+	aws --endpoint-url https://s3.investigativedata.org s3 sync ./site s3://docs.investigraph.dev
