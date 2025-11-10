@@ -22,7 +22,7 @@ def extract_pandas(ctx: SourceContext) -> RecordGenerator:
         play.read.handler = f"read_{guess_handler_from_mimetype(ctx.source.mimetype)}"
     with ctx.open() as h:
         play.read.uri = h
-        df = play.read.handle()
+        df = play.run()
         for _, row in df.iterrows():
             yield dict(row.replace(np.nan, None))
 
