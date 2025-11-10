@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
+from followthemoney import StatementEntity
 from followthemoney.mapping import QueryMapping as FtmQueryMapping
-from nomenklatura.entity import CompositeEntity
 
 from investigraph.logic.transform import map_record
 from investigraph.model.mapping import QueryMapping
@@ -12,7 +12,7 @@ def _test_model_mapping(df: pd.DataFrame, mapping: QueryMapping):
     for _, row in df.iterrows():
         row = row.replace(np.nan, None)
         for proxy in map_record(dict(row), mapping):
-            assert isinstance(proxy, CompositeEntity)
+            assert isinstance(proxy, StatementEntity)
             tested = True
             break
     assert tested

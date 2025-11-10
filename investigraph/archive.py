@@ -1,51 +1,64 @@
 """
-Cache remote file file fetching using `anystore`
+# Archive
+
+Simple archive implementation for storing scraped files based on `anystore`
 """
 
 import random
 import time
-from io import BytesIO
+from functools import cache
+from typing import IO, AnyStr, ContextManager
+from urllib.parse import urlsplit
 
-import requests
-from anystore import anycache, get_store
-from anystore.settings import Settings
+from anystore import anycache
+from anystore.decorators import error_handler
+from anystore.logging import get_logger
 from anystore.store import BaseStore
-from anystore.util import make_checksum, make_data_checksum
+from anystore.store.virtual import open_virtual
+from anystore.types import Uri
+from anystore.util import join_relpaths
 
-from investigraph.logging import get_logger
-from investigraph.model.source import Source
-from investigraph.settings import SETTINGS
+from investigraph.cache import get_archive_cache, make_cache_key
+from investigraph.settings import Settings
 
-
-def get_anystore() -> BaseStore:
-    settings = Settings()
-    settings.uri = SETTINGS.anystore_uri
-    return get_store(**settings.model_dump())
+settings = Settings()
 
 
-STORE = get_anystore()
-ARCHIVE_STORE = get_store(uri=SETTINGS.archive_uri)
+@cache
+def get_archive(uri: Uri | None = None) -> BaseStore:
+    """
+    Get the archive where to store remote files.
+
+    Set the archive via `INVESTIGRAPH_ARCHIVE_URI` (see
+    [Settings][investigraph.settings])
+
+    Args:
+        uri: Use this specific uri instead of the global setting.
+
+    Returns:
+        The archive store (see
+            [anystore](https://docs.investigraph.dev/lib/anystore))
+    """
+    archive = settings.archive.model_copy()
+    archive.uri = uri or archive.uri
+    return archive.to_store()
 
 
-def get_cache_key(url: str, *args, **kwargs) -> str | None:
-    if kwargs.pop("cache", None) is False:
-        return
-    if kwargs.pop("stream", None) is True:
-        return
-    if not kwargs.pop("url_key_only", False):
-        source = Source(uri=url)
-        head = source.head()
-        if head.ckey:
-            return make_data_checksum((url, head.ckey, *args, kwargs))
-    kwargs.pop("delay", None)
-    kwargs.pop("stealthy", None)
-    kwargs.pop("timeout", None)
-    return make_data_checksum((url, *args, kwargs))
+def make_archive_key(uri: Uri) -> str:
+    """
+    Make the key prefix based on a file uri.
+
+    Example:
+        >>> make_archive_key("https://example.org/files/data.pdf")
+        >>> "example.org/files/data.pdf"
+    """
+    return join_relpaths(*urlsplit(str(uri))[1:])
 
 
-@anycache(key_func=get_cache_key, store=STORE)
-def get(
-    url: str,
+@anycache(key_func=make_cache_key, store=get_archive_cache())
+@error_handler(max_retries=3)
+def archive_source(
+    uri: Uri,
     *args,
     url_key_only: bool | None = False,
     cache: bool | None = True,
@@ -53,47 +66,82 @@ def get(
     delay: int | None = None,
     raise_on_error: bool | None = True,
     **kwargs,
-) -> requests.Response:
+) -> str:
+    """
+    Archive a remote file and return the archive key
+
+    Args:
+        url_key_only: Compute cache key just by url as fallback
+        cache: Disable caching at all (force re-fetch)
+        stealthy: Use random http use agent (for http remote sources)
+        delay: Set a delay before fetching
+        raise_on_error: Throw exception or just log it.
+
+    Returns:
+        The archive lookup key.
+    """
     if stealthy:
         kwargs["headers"] = kwargs.pop("headers", {})
         kwargs["headers"]["User-Agent"] = random.choice(AGENTS)
     if delay is not None:
         time.sleep(delay)
-    kwargs["timeout"] = kwargs.pop("timeout", 30)
     log = get_logger(__name__)
-    log.info(f"GET {url}")
-    res = requests.get(url, *args, **kwargs)
+    archive = get_archive()
+    key = make_archive_key(uri)
+    log.info(f"ARCHIVING {uri} ...", archive=archive.uri, prefix=key)
     try:
-        res.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        with open_virtual(uri, backend_config=kwargs) as fh:
+            key = f"{key}/{fh.checksum}"
+            with archive.open(key, "wb") as out:
+                out.write(fh.read())
+    except Exception as e:
         if raise_on_error:
             raise e
         log.error(str(e))
-    return res
+    return str(key)
 
 
-@anycache(key_func=get_cache_key, store=STORE)
-def download_file(
-    url: str,
-    key: str | None = None,
+def open(
+    uri: Uri,
     url_key_only: bool | None = False,
     cache: bool | None = True,
     stealthy: bool | None = False,
     delay: int | None = None,
     raise_on_error: bool | None = True,
+    mode: str | None = None,
     **kwargs,
-) -> str:
-    res = get(
-        url,
-        cache=False,
+) -> ContextManager[IO[AnyStr]]:
+    """
+    Open a file from the archive as a file-like io handler. If it doesn't exist
+    in the archive, it will be stored first.
+
+    Args:
+        mode: open mode (default `rb`)
+        url_key_only: [only if file doesn't exist in archive yet] Compute cache
+            key just by url as fallback
+        cache: [only if file doesn't exist in archive yet] Disable caching at
+            all (force re-fetch)
+        stealthy: [only if file doesn't exist in archive yet] Use random http
+            use agent (for http remote sources)
+        delay: [only if file doesn't exist in archive yet] Set a delay before
+            fetching
+        raise_on_error: [only if file doesn't exist in archive yet] Throw
+            exception or just log it.
+
+    Returns:
+        The open file handler
+    """
+    key = archive_source(
+        uri,
+        cache=cache,
         stealthy=stealthy,
         delay=delay,
         raise_on_error=raise_on_error,
+        url_key_only=url_key_only,
         **kwargs,
     )
-    key = key or make_checksum(BytesIO(res.content))
-    ARCHIVE_STORE.put(key, res.content)
-    return key
+    archive = get_archive()
+    return archive.open(key, mode=mode)
 
 
 # https://www.useragents.me/#most-common-desktop-useragents-json-csv

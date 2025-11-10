@@ -1,9 +1,13 @@
 from functools import cache
+from typing import TypeAlias
 
 from followthemoney import model
 from followthemoney.mapping.query import QueryMapping as _QueryMapping
-from ftmq.types import Properties, Schemata
 from pydantic import BaseModel, Field
+
+# Type aliases for schema and property names (strings)
+Schemata: TypeAlias = str
+Properties: TypeAlias = str
 
 
 class PropertyMapping(BaseModel):
@@ -43,7 +47,7 @@ class QueryMapping(BaseModel):
 
 @cache
 def load_mapping(mapping: QueryMapping) -> _QueryMapping:
-    mapping = mapping.model_dump(by_alias=True)
-    mapping.pop("database", None)
-    mapping["csv_url"] = "/dev/null"
-    return model.make_mapping(mapping)
+    mapping_data = mapping.model_dump(by_alias=True)
+    mapping_data.pop("database", None)
+    mapping_data["csv_url"] = "/dev/null"
+    return model.make_mapping(mapping_data)

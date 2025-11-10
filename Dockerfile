@@ -1,17 +1,14 @@
-FROM prefecthq/prefect:2-python3.12
-
-LABEL org.opencontainers.image.title="Investigraph ETL"
-LABEL org.opencontainers.image.licenses=MIT
-LABEL org.opencontainers.image.source=https://github.com/investigativedata/investigraph-etl
+FROM ghcr.io/dataresearchcenter/ftmq:latest
 
 RUN apt-get update && apt-get -y upgrade
+RUN apt-get install -y git
 RUN pip install -q -U pip setuptools
 
 RUN apt-get install -y pkg-config libicu-dev
 RUN apt-get install -y libleveldb-dev
+RUN pip install -q plyvel
 RUN pip install -q --no-binary=:pyicu: pyicu
 RUN pip install -q psycopg2-binary
-RUN pip install -q asyncpg
 
 COPY investigraph /investigraph/investigraph
 COPY setup.py /investigraph/
@@ -21,16 +18,13 @@ COPY README.md /investigraph/
 
 RUN pip install -q /investigraph
 
-RUN mkdir -p /data/prefect
+RUN mkdir -p /data
 RUN chown -R 1000:1000 /data
 
 ENV INVESTIGRAPH_DATA_ROOT=/data
-ENV PREFECT_HOME=/data/.prefect
-ENV PREFECT_EXTRA_ENTRYPOINTS=investigraph
-ENV PREFECT_SERVER_API_HOST=0.0.0.0
-ENV PREFECT_RESULTS_PERSIST_BY_DEFAULT=true
+ENV INVESTIGRAPH_STORE_URI=leveldb:///data/store.db
 ENV DEBUG=0
 
 USER 1000
 WORKDIR /data
-CMD ["prefect server start"]
+ENTRYPOINT ["investigraph"]

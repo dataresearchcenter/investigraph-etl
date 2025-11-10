@@ -29,5 +29,3 @@ transform:
 
 load:
   handler: ./custom.py:load
-
-aggregate: false

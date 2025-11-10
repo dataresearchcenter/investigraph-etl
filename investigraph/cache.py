@@ -1,79 +1,89 @@
-import logging
 from functools import cache
-from typing import Any, Iterable, Set
 
-import fakeredis
-import redis
+from anystore.logging import get_logger
+from anystore.store import BaseStore
+from anystore.store.virtual import open_virtual
+from anystore.types import Uri
 from anystore.util import make_data_checksum
-from cachelib.serializers import RedisSerializer
 
-from investigraph.settings import SETTINGS
+from investigraph.model.source import Source
+from investigraph.settings import Settings
 
-log = logging.getLogger(__name__)
-
-DELETE = SETTINGS.debug or not SETTINGS.redis_persist
-
-
-class Cache:
-    """
-    This is an extremely simple cache interface for sharing tasks data
-    efficiently via redis (or fakeredis during development)
-
-    it creates (prefixed) keys based on input data
-
-    it mimics redis GETDEL so that after fetching data from cache the key is
-    deleted (turn of by `delete=False`)
-    """
-
-    serializer = RedisSerializer()
-
-    def __init__(self):
-        if SETTINGS.debug or not SETTINGS.redis:
-            con = fakeredis.FakeStrictRedis()
-            con.ping()
-            log.info("Redis connected: `fakeredis`")
-        else:
-            con = redis.from_url(str(SETTINGS.redis_url))
-            con.ping()
-            log.info("Redis connected: `{settings.REDIS_URL}`")
-        self.cache = con
-
-    def set(self, data: Any, key: str | None = None) -> str:
-        key = key or make_data_checksum(data)
-        data = self.serializer.dumps(data)
-        self.cache.set(self.get_key(key), data)
-        return key
-
-    def get(self, key: str, delete: bool | None = DELETE) -> Any:
-        key = self.get_key(key)
-        res = self.cache.get(key)
-        if delete:
-            self.cache.delete(key)  # GETDEL
-        if res is not None:
-            data = self.serializer.loads(res)
-            return data
-
-    def sadd(self, *values: Iterable[Any], key: str | None = None) -> str:
-        values = [str(v) for v in values]
-        key = key or make_data_checksum(values)
-        self.cache.sadd(self.get_key(key) + "#SET", *values)
-        return key
-
-    def smembers(self, key: str, delete: bool | None = DELETE) -> Set[str]:
-        key = self.get_key(key) + "#SET"
-        res: Set[bytes] = self.cache.smembers(key)
-        if delete:
-            self.cache.delete(key)
-        return {v.decode() for v in res} or None
-
-    def flushall(self):
-        return self.cache.flushall()
-
-    @staticmethod
-    def get_key(key: str) -> str:
-        return f"{SETTINGS.redis_prefix}:{key}"
+log = get_logger(__name__)
 
 
 @cache
-def get_cache() -> Cache:
-    return Cache()
+def get_runtime_cache() -> BaseStore:
+    """
+    Get shared runtime cache. This should be a fast key-value store that doesn't
+    need to be persistent.
+
+    Set via `INVESTIGRAPH_CACHE_URI` (see [Settings][investigraph.settings])
+
+    Returns:
+        The runtime cache store (see
+            [anystore](https://docs.investigraph.dev/lib/anystore))
+    """
+    settings = Settings()
+    return settings.cache.to_store()
+
+
+@cache
+def get_archive_cache(prefix: str | None = ".cache") -> BaseStore:
+    """
+    Get the archive cache subfolder where to store persistent state about
+    sources
+
+    Set the base archive via `INVESTIGRAPH_ARCHIVE_URI` (see
+    [Settings][investigraph.settings])
+
+    Returns:
+        The archive cache store (see
+            [anystore](https://docs.investigraph.dev/lib/anystore))
+    """
+    settings = Settings()
+    archive_cache = settings.archive.model_copy()
+    archive_cache.uri = f"{archive_cache.uri}/{prefix or '.cache'}"
+    return archive_cache.to_store()
+
+
+def make_cache_key(uri: Uri, *args, **kwargs) -> str | None:
+    """
+    Compute a cache key for the given uri. This tries to get an `etag` or
+    `last-modified` header, or optionally falls back to computing a checksum or
+    a key just by the `uri`.
+
+    Args:
+        uri: The local or remote uri for the file
+        cache: `bool` if to use cache at all (default)
+        url_key_only: `bool` if to compute cache key just by uri as fallback
+            (default `False`)
+        use_checksum: `bool` if to compute the checksum as fallback (default
+            `False`)
+        checksum: `str`: Give an already pre-computed checksum when using
+            `use_checksum` (optional)
+    """
+    kwargs.pop("delay", None)
+    kwargs.pop("stealthy", None)
+    kwargs.pop("timeout", None)
+    if kwargs.pop("cache", None) is False:
+        return
+    if not kwargs.pop("url_key_only", False):
+        source = Source(uri=uri)
+        info = source.info()
+        if info.cache_key:
+            return make_data_checksum((uri, info.cache_key, *args, kwargs))
+        if kwargs.pop("use_checksum", True):
+            if "checksum" in kwargs:
+                return kwargs["checksum"]
+            try:
+                with open_virtual(uri) as fh:
+                    return fh.checksum
+            except Exception as e:
+                log.warn(
+                    f"Cannot calculate checksum: `{e.__class__.__name__}`: {e}",
+                    uri=uri,
+                    **kwargs,
+                )
+        return make_data_checksum((uri, info.model_dump_json(), *args, kwargs))
+    return make_data_checksum((uri, *args, kwargs))

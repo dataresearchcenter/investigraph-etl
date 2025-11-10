@@ -1,67 +1,67 @@
-[tool.poetry]
+[project]
 name = "investigraph"
 version = "0.6.1"
 description = "etl pipeline for investigations with follow the money data"
-authors = ["Simon Wörpel <simon@investigativedata.org>"]
+authors = [{ name = "Simon Wörpel", email = "simon.woerpel@pm.me" }]
 license = "MIT"
 readme = "README.md"
-homepage = "https://investigraph.dev"
-repository = "https://github.com/investigativedata/investigraph-etl"
-documentation = "https://docs.investigraph.dev"
 classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
-packages = [{ include = "investigraph" }]
+requires-python = ">=3.11,<4"
+dependencies = [
+    "anystore (>=0.4.0,<0.5.0)",
+    "ftmq (>=4.3.2,<5.0.0)",
+    "runpandarun (>=0.6.0,<0.7.0)",
+    "dateparser (>=1.2.1,<2.0.0)",
+    "followthemoney (>=4.3.3,<5.0.0)",
+]
 
-[tool.poetry.scripts]
+[project.optional-dependencies]
+sql = ["sqlalchemy (>=2.0.36,<3.0.0)"]
+postgres = ["sqlalchemy (>=2.0.36,<3.0.0)", "psycopg2 (>=2.9.10,<3.0.0)"]
+redis = ["redis (>=4.0.0)"]
+level = ["plyvel (>=1.5.1,<2.0.0)"]
+
+[project.scripts]
 investigraph = "investigraph.cli:cli"
 
-[tool.poetry.urls]
-"Bug Tracker" = "https://github.com/investigativedata/investigraph-etl/issues"
-
-[tool.poetry.dependencies]
-python = ">=3.11,<4"
-cachelib = "^0.13.0"
-dateparser = "^1.2.0"
-followthemoney-store = "^3.1.0"
-html2text = "^2024.2.26"
-pandas = "^2.2.2"
-pantomime = "^0.6.1"
-prefect = "^2.19.8"
-prefect-dask = "^0.2.9"
-prefect-ray = "^0.3.6"
-ray = "^2.32.0"
-requests = "^2.32.3"
-typer = "^0.12.3"
-runpandarun = "^0.5.1"
-xlrd = "^2.0.1"
-datapatch = "^1.2.0"
-anystore = {extras = ["redis"], version = "^0.1.7"}
-ftmq = "^0.6.14"
-fakeredis = "^2.23.3"
+[project.urls]
+Homepage = "https://investigraph.dev"
+Repository = "https://github.com/dataresearchcenter/investigraph-etl"
+Documentation = "https://docs.investigraph.dev"
+Issues = "https://github.com/dataresearchcenter/investigraph-etl/issues"
 
 [tool.poetry.group.dev.dependencies]
 pytest-env = ">=1.1.1"
 pytest = ">=7.4.3,<9.0.0"
-pytest-cov = ">=4.1,<6.0"
+pytest-cov = ">=4.1,<7.0"
 black = ">=23.11,<25.0"
 isort = "^5.12.0"
 mypy = "^1.7.0"
-pre-commit = "^3.5.0"
+pre-commit = ">=3.5,<5.0"
 flake8 = ">=6.1,<8.0"
-pytest-xdist = "^3.4.0"
 bump2version = "^1.0.1"
+mkdocs-material = "^9.6.14"
+mkdocs-autorefs = "^1.4.2"
+mkdocstrings-python = "^1.16.11"
+griffe-pydantic = "^1.1.0"
+mkdocs = "^1.6.1"
+mkdocs-typer2 = "^0.1.4"
 
+
+[tool.poetry.dependencies]
+ftmq = {develop = true}
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest_env]
 DEBUG = 1
-PREFECT_HOME = ".test"
-INVESTIGRAPH_REDIS = 0
 INVESTIGRAPH_DATA_ROOT = ".test"
+NOMENKLATURA_DB_URL = "sqlite:///:memory:"

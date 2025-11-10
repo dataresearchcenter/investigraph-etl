@@ -1,24 +1,23 @@
 from datetime import datetime
 
-from pantomime.types import CSV, XLSX
+from rigour.mime.types import CSV, XLSX
 
 from investigraph.model import Config
-from investigraph.model.source import SourceHead
+from investigraph.model.source import SourceInfo
 
 
 def test_source(eu_authorities: Config, ec_meetings_local: Config):
     for source in ec_meetings_local.extract.sources:
-        head = source.head()
-        assert isinstance(head, SourceHead)
-        assert head.etag is None
-        assert isinstance(head.last_modified, datetime)
-        assert head.content_type == XLSX
+        info = source.info()
+        assert isinstance(info, SourceInfo)
+        assert info.etag is None
+        assert isinstance(info.updated_at, datetime)
+        assert info.mimetype == XLSX
         break
 
     for source in eu_authorities.extract.sources:
-        assert source.stream
-        head = source.head()
-        assert head.etag is None
-        assert isinstance(head.last_modified, datetime)
-        assert head.content_type == CSV
+        info = source.info()
+        assert info.etag is None
+        assert isinstance(info.updated_at, datetime)
+        assert info.mimetype == CSV
         break

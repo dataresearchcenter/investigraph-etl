@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import orjson
-from ftmq.util import make_proxy
 from typer.testing import CliRunner
 
 from investigraph.cli import cli
@@ -26,30 +24,29 @@ def test_cli_run(fixtures_path: Path):
 
 def test_cli_inspect(fixtures_path: Path):
     config = str(fixtures_path / "gdho" / "config.local.yml")
-    result = runner.invoke(cli, ["inspect", config])
-    assert result.exit_code == 0
-    result = runner.invoke(cli, ["inspect", config, "-e"])
-    assert result.exit_code == 0
-    result = runner.invoke(cli, ["inspect", config, "--extract"])
-    assert result.exit_code == 0
-    result = runner.invoke(cli, ["inspect", config, "-t"])
-    assert result.exit_code == 0
-    result = runner.invoke(cli, ["inspect", config, "--transform"])
+    result = runner.invoke(cli, ["inspect", "-c", config])
     assert result.exit_code == 0
 
-    result = runner.invoke(cli, ["inspect", config, "--transform", "--to-json"])
-    assert result.exit_code == 0
-    tested = False
-    for line in result.stdout.split("\n"):
-        data = orjson.loads(line)
-        proxy = make_proxy(data)
-        assert "gdho" in proxy.datasets
-        tested = True
-        break
-    assert tested
 
-    result = runner.invoke(
-        cli, ["inspect", config, "--transform", "--to-json", "-l", "1"]
-    )
+def test_cli_seed(fixtures_path: Path):
+    config = str(fixtures_path / "config.seed.yml")
+    result = runner.invoke(cli, ["seed", "-c", config, "-l", "10"])
     assert result.exit_code == 0
-    assert len(result.stdout.strip().split("\n")) == 1
+
+
+def test_cli_extract(fixtures_path: Path):
+    config = str(fixtures_path / "gdho" / "config.local.yml")
+    result = runner.invoke(cli, ["extract", "-c", config, "-l", "10"])
+    assert result.exit_code == 0
+
+
+def test_cli_transform(fixtures_path: Path):
+    config = str(fixtures_path / "gdho" / "config.local.yml")
+    result = runner.invoke(cli, ["transform", "-c", config])
+    assert result.exit_code == 0
+
+
+def test_cli_load(fixtures_path: Path):
+    config = str(fixtures_path / "gdho" / "config.local.yml")
+    result = runner.invoke(cli, ["load", "-c", config])
+    assert result.exit_code == 0

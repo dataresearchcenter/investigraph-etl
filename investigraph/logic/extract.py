@@ -3,41 +3,42 @@ Extract sources to iterate objects to dict records
 """
 
 import numpy as np
-import pandas as pd
-from pantomime import types
+from runpandarun import Playbook
 from runpandarun.io import guess_handler_from_mimetype
 
-from investigraph.model.context import Context
-from investigraph.model.resolver import Resolver
+from investigraph.exceptions import ImproperlyConfigured
+from investigraph.model.context import SourceContext
 from investigraph.types import RecordGenerator
 
-TABULAR = [types.CSV, types.EXCEL, types.XLS, types.XLSX]
-JSON = types.JSON
 
-
-def yield_pandas(df: pd.DataFrame) -> RecordGenerator:
-    for _, row in df.iterrows():
-        yield dict(row.replace(np.nan, None))
-
-
-def extract_pandas(
-    resolver: Resolver, chunk_size: int | None = 10_000
-) -> RecordGenerator:
-    play = resolver.source.pandas
-    play.read.uri = resolver.source.uri
+def extract_pandas(ctx: SourceContext) -> RecordGenerator:
+    play = ctx.source.pandas
+    if play is None:
+        raise ImproperlyConfigured("No playbook config")
+    play = play.model_copy(deep=True)
+    if play.read is None:
+        raise ImproperlyConfigured("No playbook config")
     if play.read.handler is None:
-        play.read.handler = f"read_{guess_handler_from_mimetype(resolver.mimetype)}"
-    for ix, chunk in enumerate(resolver.iter(chunk_size)):
-        df = play.read.handle(chunk)
-        if resolver.mimetype == types.CSV:
-            if ix == 0:  # first chunk
-                play.read.options["names"] = df.columns
-                play.read.options["skiprows"] = 0
-                play.read.options["header"] = 0
-        df = play.run(df)
-        yield from yield_pandas(df)
+        play.read.handler = f"read_{guess_handler_from_mimetype(ctx.source.mimetype)}"
+    with ctx.open() as h:
+        play.read.uri = h
+        df = play.run()
+        for _, row in df.iterrows():
+            yield dict(row.replace(np.nan, None))
 
 
 # entrypoint
-def handle(ctx: Context, resolver: Resolver, *args, **kwargs) -> RecordGenerator:
-    yield from extract_pandas(resolver, *args, **kwargs)
+def handle(ctx: SourceContext, *args, **kwargs) -> RecordGenerator:
+    """
+    The default handler for the extract stage. It handles tabular sources with
+    `pandas`. Custom extract handlers must follow this function signature.
+
+    Args:
+        ctx: instance of the current `SourceContext`
+
+    Yields:
+        Generator of dictionaries `dict[str, Any]` that are the extracted records.
+    """
+    if ctx.source.pandas is None:
+        ctx.source.pandas = Playbook()
+    yield from extract_pandas(ctx, *args, **kwargs)

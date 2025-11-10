@@ -1,35 +1,38 @@
-import logging
+from functools import cache
 from pathlib import Path
 from typing import Self
 from urllib.parse import urlparse
 
 from anystore.mixins import BaseModel
-from anystore.types import Uri
+from anystore.types import PathLike, Uri
+from anystore.util import ensure_uri
 from ftmq.model import Dataset
 from pydantic import ConfigDict
 from runpandarun.util import absolute_path
 
 from investigraph.model.stage import (
-    AggregateStage,
+    ExportStage,
     ExtractStage,
     LoadStage,
     SeedStage,
     TransformStage,
 )
-from investigraph.util import PathLike, is_module
+from investigraph.settings import Settings
+from investigraph.util import is_module
 
-log = logging.getLogger(__name__)
+settings = Settings()
 
 
 class Config(BaseModel):
-    dataset: Dataset
-    base_path: Path | None = Path()
-    seed: SeedStage | None = SeedStage()
-    extract: ExtractStage | None = ExtractStage()
-    transform: TransformStage | None = TransformStage()
-    load: LoadStage | None = LoadStage()
-    aggregate: bool | AggregateStage | None = AggregateStage()
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    dataset: Dataset
+    base_path: Path = Path()
+    seed: SeedStage = SeedStage()
+    extract: ExtractStage = ExtractStage()
+    transform: TransformStage = TransformStage()
+    load: LoadStage = LoadStage()
+    export: ExportStage = ExportStage()
 
     def __init__(self, **data):
         if "dataset" not in data:
@@ -65,14 +68,30 @@ class Config(BaseModel):
             config.load.handler = str(
                 absolute_path(config.load.handler, config.base_path)
             )
-        if config.aggregate:
-            if not is_module(config.aggregate.handler):
-                config.aggregate.handler = str(
-                    absolute_path(config.aggregate.handler, config.base_path)
+        if not is_module(config.export.handler):
+            config.export.handler = str(
+                absolute_path(config.export.handler, config.base_path)
+            )
+
+        # ensure base export uris when using memory store
+        if config.load.uri.startswith("memory"):
+            if config.export.entities_uri is None:
+                config.export.entities_uri = ensure_uri(
+                    settings.data_root / config.dataset.name / "entities.ftm.json"
+                )
+            if config.export.index_uri is None:
+                config.export.index_uri = ensure_uri(
+                    settings.data_root / config.dataset.name / "index.json"
                 )
 
         return config
 
 
-def get_config(uri: Uri) -> Config:
-    return Config.from_uri(uri)
+@cache
+def get_config(
+    uri: Uri, index_uri: Uri | None = None, entities_uri: Uri | None = None
+) -> Config:
+    config = Config.from_uri(uri)
+    config.export.index_uri = index_uri or config.export.index_uri
+    config.export.entities_uri = entities_uri or config.export.entities_uri
+    return config

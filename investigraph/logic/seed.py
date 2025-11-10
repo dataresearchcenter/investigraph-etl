@@ -1,23 +1,32 @@
-"""
-Seed sources for extraction
-"""
-
 from typing import Generator
 
+from anystore.store import get_store
 from banal import ensure_dict, ensure_list
-from fsspec import get_fs_token_paths
 
-from investigraph.model.context import BaseContext
+from investigraph.model.context import DatasetContext
 from investigraph.model.source import Source
 
 
-def handle(ctx: BaseContext) -> Generator[Source, None, None]:
-    if ctx.config.seed.glob is not None:
-        for glob in ensure_list(ctx.config.seed.glob):
-            fs, _, paths = get_fs_token_paths(
-                glob, storage_options=ctx.config.seed.storage_options
-            )
-            for uri in paths:
-                if hasattr(fs, "url"):
-                    uri = fs.url(uri)
-                yield Source(uri=uri, **ensure_dict(ctx.config.seed.source_options))
+def handle(ctx: DatasetContext) -> Generator[Source, None, None]:
+    """
+    The default handler for the seed stage.
+
+    Args:
+        ctx: instance of the current `DatasetContext`
+
+    Yields:
+        Generator of `Source` objects for further processing in extract stage.
+    """
+    if ctx.config.seed.uri is not None:
+        store = get_store(ctx.config.seed.uri)
+        globs = ensure_list(ctx.config.seed.glob) or [None]
+        for glob in globs:
+            for key in store.iterate_keys(
+                glob=glob,
+                prefix=ctx.config.seed.prefix,
+                exclude_prefix=ctx.config.seed.exclude_prefix,
+            ):
+                yield Source(
+                    uri=store.get_key(key),
+                    **ensure_dict(ctx.config.seed.source_options),
+                )

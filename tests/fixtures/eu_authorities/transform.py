@@ -3,14 +3,14 @@ from typing import Any
 # import html2text
 from zavod.util import join_slug
 
-from investigraph.model import Context
-from investigraph.util import make_proxy
+from investigraph.model import SourceContext
+from investigraph.util import make_entity
 
 
-def handle(ctx: Context, data: dict[str, Any], ix: int):
+def handle(ctx: SourceContext, data: dict[str, Any], ix: int):
     slug = data.pop("URL name")
     id_ = join_slug(ctx.prefix, slug)
-    body = make_proxy("PublicBody", id_)
+    body = make_entity("PublicBody", id_)
     body.add("name", data.pop("Name"))
     body.add("weakAlias", data.pop("Short name"))
     tags = data.pop("Tags").split()

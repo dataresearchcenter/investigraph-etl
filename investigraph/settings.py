@@ -1,59 +1,67 @@
-from datetime import timedelta
+import os
 from pathlib import Path
-from typing import Literal
 
-from ftmstore import settings as ftmstore_settings
-from prefect.settings import PREFECT_API_DATABASE_CONNECTION_URL, PREFECT_HOME
-from pydantic import Field, RedisDsn
+from anystore.model import StoreModel
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 VERSION = "0.6.1"
 
+DATA_ROOT = Path(
+    os.environ.get("INVESTIGRAPH_DATA_ROOT", Path.cwd() / "data")
+).absolute()
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="investigraph_", extra="allow")
+    """
+    `investigraph` settings management using
+    [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
 
-    debug: bool = Field(False, alias="debug")
-    data_root: Path = Field((Path.cwd() / "data").absolute())
-    default_seeder: str = "investigraph.logic.seed:handle"
-    default_extractor: str = "investigraph.logic.extract:handle"
-    default_transformer: str = "investigraph.logic.transform:map_ftm"
-    default_loader: str = "investigraph.logic.load:load_proxies"
-    default_aggregator: str = "investigraph.logic.aggregate:in_memory"
+    Note:
+        All settings can be set via environment variables (or a .env file),
+        prepending `INVESTIGRAPH_` (except for those with a different alias)
+    """
 
-    redis: bool = False
-    redis_url: RedisDsn = Field("redis://localhost:6379")
-    redis_prefix: str = f"investigraph:{VERSION}"
-    redis_persist: bool = True
+    model_config = SettingsConfigDict(
+        env_prefix="investigraph_",
+        env_nested_delimiter="_",
+        nested_model_default_partial_update=True,
+        env_file=".env",
+        extra="ignore",
+    )
 
-    task_cache: bool = False
-    task_retries: int = 3
-    task_retry_delay: int = 5
-    task_cache_expiration: timedelta | None = None
+    debug: bool = Field(default=False, alias="debug")
+    """Enable debug mode (more error output)"""
 
-    fetch_cache: bool = True
+    data_root: Path = DATA_ROOT
+    """Default data directory to store archive and json exports"""
+
+    config: str | None = None
+    """Use this config.yml globally"""
+
+    seeder: str = "investigraph.logic.seed:handle"
+    """Use this seed handler globally"""
+
+    extractor: str = "investigraph.logic.extract:handle"
+    """Use this extract handler globally"""
+
+    transformer: str = "investigraph.logic.transform:map_ftm"
+    """Use this transform handler globally"""
+
+    loader: str = "investigraph.logic.load:handle"
+    """Use this load handler globally"""
+
+    exporter: str = "investigraph.logic.export:handle"
+    """Use this export handler globally"""
+
+    archive: StoreModel = StoreModel(uri=DATA_ROOT / "archive")
+    """Remote file archive store"""
+
+    cache: StoreModel = StoreModel(uri="memory:///")
+    """Runtime cache"""
+
     extract_cache: bool = True
-    transform_cache: bool = True
-    load_cache: bool = True
-    aggregate_cache: bool = True
+    """Use extract cache (don't extract sources already seen)"""
 
-    task_runner: Literal["dask", "ray"] | None = Field(
-        None, alias="prefect_task_runner"
-    )
-
-    chunk_size: int = 1_000
-
-    ftm_store_uri: str = Field(
-        PREFECT_API_DATABASE_CONNECTION_URL.value(), alias="ftm_store_uri"
-    )
-    anystore_uri: str = Field(
-        (Path(PREFECT_HOME.value()) / ".anystore").absolute().as_uri(),
-        alias="anystore_uri",
-    )
-
-    archive_uri: str = Field(str((Path.cwd() / "data" / "archive").absolute().as_uri()))
-
-
-SETTINGS = Settings()
-DEBUG = SETTINGS.debug
-ftmstore_settings.DATABASE_URI = SETTINGS.ftm_store_uri
+    store_uri: str = Field(default="memory:///", alias="ftm_statement_store")
+    """Statement store for entity aggregation"""

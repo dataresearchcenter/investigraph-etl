@@ -1,10 +1,7 @@
 all: clean install test
 
-agent:
-	poetry run prefect agent start -q "default"
-
-server:
-	poetry run prefect server start
+install:
+	poetry install --with dev --all-extras
 
 lint:
 	poetry run flake8 investigraph --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -32,3 +29,7 @@ clean:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
+
+documentation:
+	mkdocs build
+	aws --endpoint-url https://s3.investigativedata.org s3 sync ./site s3://docs.investigraph.dev

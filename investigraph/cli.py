@@ -1,182 +1,197 @@
-import sys
-from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Optional, TypeAlias
 
-import orjson
 import typer
-from anystore.io import smart_write
-from ftmq.model import Catalog
-from rich import print
-from rich.console import Console
-from rich.table import Table
-
-from investigraph.inspect import (
-    inspect_config,
-    inspect_extract,
-    inspect_seed,
-    inspect_transform,
+from anystore.cli import ErrorHandler
+from anystore.io import (
+    IOFormat,
+    smart_stream_data,
+    smart_stream_json_models,
+    smart_write,
+    smart_write_data,
+    smart_write_models,
 )
-from investigraph.model.flow import FlowOptions
-from investigraph.pipeline import run
-from investigraph.settings import SETTINGS, VERSION
+from anystore.logging import configure_logging, get_logger
+from anystore.types import Uri
+from followthemoney import StatementEntity
+from ftmq.io import smart_read_proxies, smart_write_proxies
+from rich import print
 
-cli = typer.Typer(no_args_is_help=True)
-console = Console()
+from investigraph.exceptions import ImproperlyConfigured
+from investigraph.inspect import inspect_config
+from investigraph.logic.transform import transform_record
+from investigraph.model.context import get_dataset_context, get_source_context
+from investigraph.model.source import Source
+from investigraph.pipeline import run
+from investigraph.settings import VERSION, Settings
+
+settings = Settings()
+cli = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=settings.debug)
+log = get_logger(__name__)
+
+CONFIG_URI: TypeAlias = Annotated[
+    str | None,
+    typer.Option("-c", help="Any local or remote json or yaml uri"),
+]
+
+
+class ConfigUri(ErrorHandler):
+    def __init__(self, config_uri: Uri | None = None, *args, **kwargs):
+        uri = config_uri or settings.config
+        if not uri:
+            raise ImproperlyConfigured("Specify config.yml either via `-c` flag or ENV")
+        self.config_uri = uri
+        super().__init__(*args, **kwargs)
+
+    def __enter__(self):
+        return self.config_uri
 
 
 @cli.callback(invoke_without_command=True)
 def cli_version(
-    version: Annotated[Optional[bool], typer.Option(..., help="Show version")] = False
+    version: Annotated[Optional[bool], typer.Option(..., help="Show version")] = False,
 ):
     if version:
         print(VERSION)
         raise typer.Exit()
+    configure_logging()
 
 
 @cli.command("run")
 def cli_run(
-    config: Annotated[
-        str,
-        typer.Option("-c", help="Any local or remote json or yaml uri"),
-    ],
+    config: CONFIG_URI = None,
+    store_uri: Annotated[Optional[str], typer.Option(...)] = None,
     index_uri: Annotated[Optional[str], typer.Option(...)] = None,
-    fragments_uri: Annotated[Optional[str], typer.Option(...)] = None,
     entities_uri: Annotated[Optional[str], typer.Option(...)] = None,
-    aggregate: Annotated[Optional[bool], typer.Option(...)] = True,
-    chunk_size: Annotated[Optional[int], typer.Option(...)] = SETTINGS.chunk_size,
 ):
     """
     Execute a dataset pipeline
     """
-    options = FlowOptions(
-        config=config,
-        index_uri=index_uri,
-        fragments_uri=fragments_uri,
-        entities_uri=entities_uri,
-        aggregate=aggregate,
-        chunk_size=chunk_size,
-    )
-    run(options)
+    with ConfigUri(config) as config_uri:
+        print(
+            run(
+                config_uri,
+                store_uri=store_uri,
+                entities_uri=entities_uri,
+                index_uri=index_uri,
+            )
+        )
+
+
+@cli.command("seed")
+def cli_seed(
+    config: CONFIG_URI = None,
+    out_uri: Annotated[str, typer.Option("-o")] = "-",
+    output_format: Annotated[IOFormat, typer.Option()] = IOFormat.json,
+    limit: Annotated[
+        int | None,
+        typer.Option("-l", help="Only get this number of items"),
+    ] = None,
+):
+    """
+    Execute a dataset pipelines seed stage and write sources to out_uri
+    (default: stdout)
+    """
+    with ConfigUri(config) as config_uri:
+        ctx = get_dataset_context(config_uri)
+        sources = (c.source for c in ctx.get_sources(limit))
+        smart_write_models(out_uri, sources, output_format=output_format.name)
 
 
 @cli.command("extract")
 def cli_extract(
-    config: Annotated[
-        str,
-        typer.Option("-c", help="Any local or remote json or yaml uri"),
-    ],
-    uri: Annotated[str, typer.Option("-o")] = "-",
-    chunk_size: Annotated[Optional[int], typer.Option(...)] = 1_000,
+    config: CONFIG_URI = None,
+    source: Annotated[
+        str | None, typer.Option("-s", help="Source name (from config)")
+    ] = None,
+    from_stdin: Annotated[bool, typer.Option()] = False,
+    out_uri: Annotated[str, typer.Option("-o")] = "-",
+    output_format: Annotated[IOFormat, typer.Option()] = IOFormat.json,
+    limit: Annotated[
+        int | None,
+        typer.Option("-l", help="Only get this number of items"),
+    ] = None,
 ):
     """
-    Execute a dataset pipelines extract stage and write records to out (default: stdout)
+    Execute a dataset pipelines extract stage and write records to out_uri
+    (default: stdout)
     """
-    options = FlowOptions(
-        config=config, chunk_size=chunk_size, records_uri=uri, extract_only=True
-    )
-    run(options)
+    with ConfigUri(config) as config_uri:
+        if from_stdin:
+            for source_ in smart_stream_json_models("-", Source):
+                if source is None or source == source_.name:
+                    ctx = get_source_context(config_uri, source_.name)
+                    smart_write_data(
+                        out_uri, ctx.extract(limit), output_format=output_format.name
+                    )
+        else:
+            extractor = []
+            ctx = get_dataset_context(config_uri)
+            if source is not None:
+                for sctx in ctx.get_sources():
+                    if sctx.source.name == source:
+                        extractor = sctx.extract(limit)
+                        break
+            else:
+                extractor = ctx.extract_all(limit)
+            smart_write_data(out_uri, extractor, output_format=output_format.name)
+
+
+@cli.command("transform")
+def cli_transform(
+    config: CONFIG_URI = None,
+    in_uri: Annotated[str, typer.Option("-i")] = "-",
+    out_uri: Annotated[str, typer.Option("-o")] = "-",
+    input_format: Annotated[IOFormat, typer.Option()] = IOFormat.json,
+):
+    """
+    Execute a dataset pipelines transform stage with records from in_uri
+    (default: stdin) and write proxies to out_uri (default: stdout)
+    """
+    with ConfigUri(config) as config_uri:
+
+        def _proxies():
+            for ix, record in enumerate(
+                smart_stream_data(in_uri, input_format=input_format.name)
+            ):
+                yield from transform_record(config_uri, record, ix)
+
+        smart_write_proxies(out_uri, _proxies())
+
+
+@cli.command("load")
+def cli_load(
+    config: CONFIG_URI = None,
+    in_uri: Annotated[str, typer.Option("-i")] = "-",
+):
+    """
+    Execute a dataset pipelines load stage with proxies from in_uri
+    (default: stdin)
+    """
+    with ConfigUri(config) as config_uri:
+        proxies = smart_read_proxies(in_uri, entity_type=StatementEntity)
+        ctx = get_dataset_context(config_uri)
+        ctx.load(proxies)
 
 
 @cli.command("inspect")
-def cli_inspect(
-    config_path: Annotated[Path, typer.Argument()],
-    seed: Annotated[Optional[bool], typer.Option("-s", "--seed")] = False,
-    extract: Annotated[Optional[bool], typer.Option("-e", "--extract")] = False,
-    transform: Annotated[Optional[bool], typer.Option("-t", "--transform")] = False,
-    limit: Annotated[Optional[int], typer.Option("-l", "--limit")] = 5,
-    to_csv: Annotated[Optional[bool], typer.Option()] = False,
-    to_json: Annotated[Optional[bool], typer.Option()] = False,
-    usecols: Annotated[
-        Optional[str],
-        typer.Option(
-            "-c",
-            "--usecols",
-            help="Comma separated list of column names or ix to display",
-        ),
-    ] = None,
-):
-    config = inspect_config(config_path)
-    if not to_json and not to_csv:
-        print(f"[bold green]OK[/bold green] `{config_path}`")
-        print(f"[bold]dataset:[/bold] {config.dataset.name}")
-        print(f"[bold]title:[/bold] {config.dataset.title}")
+def cli_inspect(config: CONFIG_URI = None):
+    """Validate dataset config"""
+    with ConfigUri(config) as config_uri:
+        result = inspect_config(config_uri)
+        print(f"[bold green]OK[/bold green] `{config}`")
+        print(f"[bold]dataset:[/bold] {result.dataset.name}")
+        print(f"[bold]title:[/bold] {result.dataset.title}")
 
-    if seed:
-        df = inspect_seed(config, limit)
-        if usecols:
-            df = df[[c for c in usecols.split(",") if c in df.columns]]
-        if not to_json and not to_csv:
-            print("[bold green]OK[/bold green]")
-        if to_json:
-            for _, row in df.iterrows():
-                typer.echo(
-                    orjson.dumps(row.to_dict(), option=orjson.OPT_APPEND_NEWLINE)
-                )
-        elif to_csv:
-            df.to_csv(sys.stdout, index=False)
+
+@cli.command("settings")
+def cli_settings(
+    out_uri: Annotated[str, typer.Option("-o")] = "-",
+):
+    """
+    Show current settings
+    """
+    with ErrorHandler():
+        if out_uri == "-":
+            print(settings)
         else:
-            table = Table(*df.columns.map(str))
-            df = df.fillna("").map(str)
-            for _, row in df.iterrows():
-                table.add_row(*row.values)
-            console.print(table)
-
-    if extract:
-        for name, df in inspect_extract(config, limit):
-            if usecols:
-                df = df[[c for c in usecols.split(",") if c in df.columns]]
-            if not to_json and not to_csv:
-                print(f"[bold green]OK[/bold green] {name}")
-            if to_json:
-                for _, row in df.iterrows():
-                    typer.echo(
-                        orjson.dumps(row.to_dict(), option=orjson.OPT_APPEND_NEWLINE)
-                    )
-            elif to_csv:
-                df.to_csv(sys.stdout, index=False)
-            else:
-                table = Table(*df.columns.map(str))
-                df = df.fillna("").map(str)
-                for _, row in df.iterrows():
-                    table.add_row(*row.values)
-                console.print(table)
-
-    if transform:
-        for name, proxies in inspect_transform(config, limit):
-            if not to_json:
-                print(f"[bold green]OK[/bold green] {name}")
-            for proxy in proxies:
-                data = proxy.to_dict()
-                if not to_json:
-                    print(data)
-                else:
-                    typer.echo(orjson.dumps(data))
-
-
-@cli.command("build-catalog")
-def cli_catalog(
-    in_uri: Annotated[str, typer.Option("-i")] = "-",
-    out_uri: Annotated[str, typer.Option("-o")] = "-",
-):
-    """
-    Build a catalog from datasets metadata and write it to anywhere from stdout
-    (default) to any uri `fsspec` can handle, e.g.:
-
-        investigraph build-catalog -i catalog.yml -o s3://mybucket/catalog.json
-    """
-    catalog = Catalog._from_uri(in_uri)
-    data = catalog.model_dump_json()
-    smart_write(out_uri, data.encode())
-
-
-@cli.command("config")
-def cli_config(
-    out_uri: Annotated[str, typer.Option("-o")] = "-",
-):
-    """
-    Show current config
-    """
-    if out_uri == "-":
-        print(SETTINGS)
-    else:
-        smart_write(out_uri, SETTINGS.model_dump_json().encode())
+            smart_write(out_uri, settings.model_dump_json().encode())
