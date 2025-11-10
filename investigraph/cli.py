@@ -12,6 +12,7 @@ from anystore.io import (
 )
 from anystore.logging import configure_logging, get_logger
 from anystore.types import Uri
+from followthemoney import StatementEntity
 from ftmq.io import smart_read_proxies, smart_write_proxies
 from rich import print
 
@@ -47,7 +48,7 @@ class ConfigUri(ErrorHandler):
 
 @cli.callback(invoke_without_command=True)
 def cli_version(
-    version: Annotated[Optional[bool], typer.Option(..., help="Show version")] = False
+    version: Annotated[Optional[bool], typer.Option(..., help="Show version")] = False,
 ):
     if version:
         print(VERSION)
@@ -99,6 +100,9 @@ def cli_seed(
 @cli.command("extract")
 def cli_extract(
     config: CONFIG_URI = None,
+    source: Annotated[
+        str | None, typer.Option("-s", help="Source name (from config)")
+    ] = None,
     from_stdin: Annotated[bool, typer.Option()] = False,
     out_uri: Annotated[str, typer.Option("-o")] = "-",
     output_format: Annotated[IOFormat, typer.Option()] = IOFormat.json,
@@ -113,16 +117,23 @@ def cli_extract(
     """
     with ConfigUri(config) as config_uri:
         if from_stdin:
-            for source in smart_stream_json_models("-", Source):
-                ctx = get_source_context(config_uri, source.name)
-                smart_write_data(
-                    out_uri, ctx.extract(limit), output_format=output_format.name
-                )
+            for source_ in smart_stream_json_models("-", Source):
+                if source is None or source == source_.name:
+                    ctx = get_source_context(config_uri, source_.name)
+                    smart_write_data(
+                        out_uri, ctx.extract(limit), output_format=output_format.name
+                    )
         else:
+            extractor = []
             ctx = get_dataset_context(config_uri)
-            smart_write_data(
-                out_uri, ctx.extract_all(limit), output_format=output_format.name
-            )
+            if source is not None:
+                for sctx in ctx.get_sources():
+                    if sctx.source.name == source:
+                        extractor = sctx.extract(limit)
+                        break
+            else:
+                extractor = ctx.extract_all(limit)
+            smart_write_data(out_uri, extractor, output_format=output_format.name)
 
 
 @cli.command("transform")
@@ -157,7 +168,7 @@ def cli_load(
     (default: stdin)
     """
     with ConfigUri(config) as config_uri:
-        proxies = smart_read_proxies(in_uri)
+        proxies = smart_read_proxies(in_uri, entity_type=StatementEntity)
         ctx = get_dataset_context(config_uri)
         ctx.load(proxies)
 
