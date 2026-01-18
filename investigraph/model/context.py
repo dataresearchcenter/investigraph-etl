@@ -118,11 +118,14 @@ class DatasetContext(BaseModel):
         Yields:
             Generator for Source model instances
         """
-        for ix, source in enumerate(
-            (*self.config.seed.handle(self), *self.config.extract.sources), 1
-        ):
+
+        def _sources():
+            yield from self.config.seed.handle(self)
+            yield from self.config.extract.sources
+
+        for ix, source in enumerate(_sources(), 1):
             yield SourceContext(config=self.config, source=source)
-            if limit is not None and limit > ix:
+            if limit is not None and ix >= limit:
                 return
 
     # RUNTIME HELPERS
@@ -251,14 +254,13 @@ class SourceContext(DatasetContext):
         Yields:
             Generator of dictionaries `dict[str, Any]` that are the extracted records.
         """
-
         if not self.should_extract:
             return
 
         def _records():
             for ix, record in enumerate(self.config.extract.handle(self), 1):
                 if limit is not None and ix > limit:
-                    break
+                    return
                 record["__source__"] = self.source.name
                 yield record
 
@@ -271,8 +273,9 @@ class SourceContext(DatasetContext):
             source=self.source.uri,
         )
 
-        cache = get_archive_cache()
-        cache.touch(self.extract_key)
+        if limit is None:
+            cache = get_archive_cache()
+            cache.touch(self.extract_key)
 
     def transform(self, records: RecordGenerator) -> StatementEntities:
         """
@@ -394,13 +397,17 @@ class TaskContext(SourceContext):
 
 
 @cache
-def get_source_context(config_uri: Uri, source_name: str) -> SourceContext:
+def get_source_context(
+    config_uri: Uri, source_name: str, uri: str | None = None
+) -> SourceContext:
     config = get_config(config_uri)
     for source in config.extract.sources:
         if source.name == source_name:
             return SourceContext(config=config, source=source)
     if len(config.extract.sources) == 1:
         return SourceContext(config=config, source=config.extract.sources[0])
+    if uri:
+        return SourceContext(config=config, source=Source(name=source_name, uri=uri))
     raise ValueError(f"Source not found: `{source_name}`")
 
 

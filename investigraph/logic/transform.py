@@ -46,5 +46,5 @@ def map_ftm(ctx: "SourceContext", record: Record, ix: int) -> StatementEntities:
 
 
 def transform_record(config_uri: Uri, record: Record, ix: int) -> StatementEntities:
-    sctx = get_source_context(config_uri, record.pop("__source__"))
+    sctx = get_source_context(config_uri, record.get("__source__", "stdin"), uri="-")
     yield from sctx.config.transform.handle(sctx, record, ix)

@@ -119,7 +119,7 @@ def cli_extract(
         if from_stdin:
             for source_ in smart_stream_json_models("-", Source):
                 if source is None or source == source_.name:
-                    ctx = get_source_context(config_uri, source_.name)
+                    ctx = get_source_context(config_uri, source_.name, uri=source_.uri)
                     smart_write_data(
                         out_uri, ctx.extract(limit), output_format=output_format.name
                     )
