@@ -1,9 +1,9 @@
 # thanks, zavod: https://zavod.opensanctions.org/helpers/#zavod.helpers.make_address
 
+from functools import lru_cache
 from typing import Optional
 
-from followthemoney import StatementEntity, registry
-from ftmq.util import lru_cache
+from followthemoney import EntityProxy, registry
 from rigour.addresses import format_address_line
 
 from investigraph.model import SourceContext
@@ -87,7 +87,7 @@ def make_address(
     country_code: Optional[str] = None,
     key: Optional[str] = None,
     lang: Optional[str] = None,
-) -> Optional[StatementEntity]:
+) -> Optional[EntityProxy]:
     """Generate an address schema object adjacent to the main entity.
 
     Args:
@@ -117,11 +117,11 @@ def make_address(
     # This is meant to handle cases where the country field contains a country code
     # in a subset of the given records:
     if country is not None and len(country.strip()) == 2:
-        context.log.warn(
-            "Country name looks like a country code",
-            country=country,
-            country_code=country_code,
-        )
+        # context.log.warn(
+        #     "Country name looks like a country code",
+        #     country=country,
+        #     country_code=country_code,
+        # )
         if country_code is None:
             country_code = country
             country = None
@@ -175,7 +175,7 @@ def make_address(
     return address
 
 
-def assign_address(entity: StatementEntity, address: StatementEntity | None) -> None:
+def assign_address(entity: EntityProxy, address: EntityProxy | None) -> None:
     """Assign an Address entity to a given Entity. This sets `address` property
     to the "full" property of the Address, assigns countries and sets
     `addressEntity`.
