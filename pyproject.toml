@@ -15,11 +15,11 @@ classifiers = [
 ]
 requires-python = ">=3.11,<4"
 dependencies = [
-    "anystore (>=0.4.0,<0.5.0)",
-    "ftmq (>=4.3.2,<5.0.0)",
-    "runpandarun (>=0.6.0,<0.7.0)",
+    "anystore (>=0.4.3,<0.5.0)",
+    "ftmq (>=4.5.0,<5.0.0)",
+    "runpandarun (>=0.6.1,<0.7.0)",
     "dateparser (>=1.2.1,<2.0.0)",
-    "followthemoney (>=4.3.3,<5.0.0)",
+    "followthemoney (>=4.5.0,<5.0.0)",
 ]
 
 [project.optional-dependencies]
@@ -54,9 +54,6 @@ griffe-pydantic = "^1.1.0"
 mkdocs = "^1.6.1"
 mkdocs-typer2 = "^0.1.4"
 
-
-[tool.poetry.dependencies]
-ftmq = {develop = true}
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -65,3 +62,4 @@ build-backend = "poetry.core.masonry.api"
 DEBUG = 1
 INVESTIGRAPH_DATA_ROOT = ".test"
 NOMENKLATURA_DB_URL = "sqlite:///:memory:"
+FTM_STATEMENT_STORE = "memory://"
