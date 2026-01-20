@@ -65,3 +65,6 @@ class Settings(BaseSettings):
 
     store_uri: str = Field(default="memory:///", alias="ftm_statement_store")
     """Statement store for entity aggregation"""
+
+    http_timeout: int = 300
+    """HTTP request timeout in seconds (default: 5 minutes)"""

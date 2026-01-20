@@ -10,6 +10,7 @@ from functools import cache
 from typing import IO, AnyStr, ContextManager
 from urllib.parse import urlsplit
 
+from aiohttp import ClientTimeout
 from anystore import anycache
 from anystore.decorators import error_handler
 from anystore.logging import get_logger
@@ -22,6 +23,16 @@ from investigraph.cache import get_archive_cache, make_cache_key
 from investigraph.settings import Settings
 
 settings = Settings()
+
+
+def _get_http_kwargs(uri: Uri) -> dict:
+    """Get HTTP-specific kwargs including timeout for HTTP/HTTPS URIs."""
+    uri_str = str(uri)
+    if uri_str.startswith("http://") or uri_str.startswith("https://"):
+        return {
+            "client_kwargs": {"timeout": ClientTimeout(total=settings.http_timeout)}
+        }
+    return {}
 
 
 @cache
@@ -90,7 +101,10 @@ def archive_source(
     key = make_archive_key(uri)
     log.info(f"ARCHIVING {uri} ...", archive=archive.uri, prefix=key)
     try:
-        with open_virtual(uri, backend_config=kwargs) as fh:
+        http_kwargs = _get_http_kwargs(uri)
+        with open_virtual(uri, backend_config={**http_kwargs, **kwargs}) as fh:
+            if fh.checksum is None:
+                raise RuntimeError(f"No checksum for `{uri}`")
             key = f"{key}/{fh.checksum}"
             with archive.open(key, "wb") as out:
                 out.write(fh.read())
