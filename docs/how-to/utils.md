@@ -99,13 +99,13 @@ def handle(ctx, record, ix):
 Use `normality` for text cleaning:
 
 ```python
-from normality import slugify, collapse_spaces, stringify
+from normality import slugify, squash_spaces, stringify
 
 def handle(ctx, record, ix):
     entity = ctx.make_entity("Person")
 
     # Remove extra whitespace
-    name = collapse_spaces(record["name"])
+    name = squash_spaces(record["name"])
     entity.add("name", name)
 
     # Convert to string safely
@@ -594,7 +594,7 @@ def handle(ctx, record, ix):
 ### From `normality`
 
 - `slugify(text, sep="-")` - Generate URL-safe slug
-- `collapse_spaces(text)` - Remove extra whitespace
+- `squash_spaces(text)` - Remove extra whitespace
 - `stringify(value)` - Safe conversion to string
 
 ## Further reading

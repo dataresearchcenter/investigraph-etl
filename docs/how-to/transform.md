@@ -150,13 +150,13 @@ def handle(ctx, record, ix):
 Clean text data before adding to entities:
 
 ```python
-from normality import slugify, collapse_spaces
+from normality import slugify, squash_spaces
 
 def handle(ctx, record, ix):
     entity = ctx.make_entity("Organization")
 
     # Remove extra whitespace
-    name = collapse_spaces(record["name"])
+    name = squash_spaces(record["name"])
     entity.add("name", name)
 
     # Generate consistent slugs
