@@ -62,6 +62,7 @@ def cli_run(
     store_uri: Annotated[Optional[str], typer.Option(...)] = None,
     index_uri: Annotated[Optional[str], typer.Option(...)] = None,
     entities_uri: Annotated[Optional[str], typer.Option(...)] = None,
+    statistics_uri: Annotated[Optional[str], typer.Option(...)] = None,
 ):
     """
     Execute a dataset pipeline
@@ -73,6 +74,7 @@ def cli_run(
                 store_uri=store_uri,
                 entities_uri=entities_uri,
                 index_uri=index_uri,
+                statistics_uri=statistics_uri,
             )
         )
 

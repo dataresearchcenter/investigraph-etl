@@ -4,8 +4,7 @@ aggregate fragments to export
 
 from typing import TYPE_CHECKING
 
-from anystore import smart_write
-from anystore.io import logged_items
+from anystore.io import logged_items, smart_write_model
 from anystore.logging import get_logger
 from followthemoney import StatementEntity
 from followthemoney.proxy import E
@@ -63,11 +62,12 @@ def handle(ctx: "DatasetContext", *args, **kwargs) -> Dataset:
         # still compute statistics by iterating through the proxy iterator
         _ = [p for p in iterator]
 
-    if ctx.config.export.index_uri:
+    if ctx.config.export.index_uri or ctx.config.export.statistics_uri:
         stats = collector.export()
         ctx.config.dataset.apply_stats(stats)
-        smart_write(
-            ctx.config.export.index_uri, ctx.config.dataset.model_dump_json().encode()
-        )
+        if ctx.config.export.index_uri:
+            smart_write_model(ctx.config.export.index_uri, ctx.config.dataset)
+        if ctx.config.export.statistics_uri:
+            smart_write_model(ctx.config.export.statistics_uri, stats)
 
     return ctx.config.dataset

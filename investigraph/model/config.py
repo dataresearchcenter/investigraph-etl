@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Self
 from urllib.parse import urlparse
 
-from anystore.mixins import BaseModel
+from anystore.model.base import BaseModel
 from anystore.types import PathLike, Uri
 from anystore.util import ensure_uri
 from ftmq.model import Dataset

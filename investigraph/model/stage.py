@@ -95,3 +95,4 @@ class ExportStage(Stage):
 
     index_uri: Uri | None = None
     entities_uri: Uri | None = None
+    statistics_uri: Uri | None = None
