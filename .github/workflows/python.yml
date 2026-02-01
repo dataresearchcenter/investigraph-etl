@@ -4,12 +4,8 @@
 name: Python
 
 on:
+  push:
   pull_request:
-    branches: [ "main", "develop" ]
-    paths:
-      - investigraph/*.py
-      - tests/*
-      - poetry.lock
 
 jobs:
   test:
