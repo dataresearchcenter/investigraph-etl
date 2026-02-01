@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../datastore"
+		},
+		{
+			"path": "../../datasets"
+		},
+		{
+			"path": "../../aleph/memorious"
+		},
+		{
+			"path": "../../investigativedata/griophos/data"
+		}
+	],
+	"settings": {}
+}

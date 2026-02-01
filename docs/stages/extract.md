@@ -241,16 +241,6 @@ To output the first records as `csv`:
 
     investigraph extract -c path/to/config.yml -l 10 --output-format csv
 
-## Archiving remote sources
-
-Per default, **investigraph** stores remote sources in a local archive. To disable this behaviour, set `extract.archive` to `false`:
-
-```yaml
-extract:
-  archive: false
-  sources:
-    - # ...
-```
 
 ## Bring your own code
 

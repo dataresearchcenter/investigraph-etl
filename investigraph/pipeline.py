@@ -36,7 +36,7 @@ def run(
     config.load.uri = store_uri or config.load.uri
     config.export.index_uri = index_uri or config.export.index_uri
     config.export.entities_uri = entities_uri or config.export.entities_uri
-    config.export.statistics_uri = entities_uri or config.export.statistics_uri
+    config.export.statistics_uri = statistics_uri or config.export.statistics_uri
     ctx = DatasetContext(config=config)
 
     has_run = False  # if all sources are cached

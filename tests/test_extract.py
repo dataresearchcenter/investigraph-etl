@@ -33,14 +33,3 @@ def test_extract(ec_meetings_local: Config, gdho: Config):
             tested = True
             break
     assert tested
-
-
-def test_extract_cached(eu_authorities: Config):
-    ctx = DatasetContext(config=eu_authorities)
-    for source in ctx.get_sources():
-        records = [r for r in source.extract()]
-        assert len(records) == 151
-    # now cached, no records
-    for source in ctx.get_sources():
-        records = [r for r in source.extract()]
-        assert len(records) == 0

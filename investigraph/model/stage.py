@@ -61,7 +61,6 @@ class SeedStage(Stage):
 class ExtractStage(Stage):
     default_handler = settings.extractor
 
-    archive: bool = True
     sources: list[Source] = []
     pandas: Playbook = Playbook()
 

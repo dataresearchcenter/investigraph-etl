@@ -5,8 +5,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from typing import Any, Callable
 
-from anystore.io import Uri
-from anystore.types import SDict
+from anystore.types import SDict, Uri
 from anystore.util import make_data_checksum
 from banal import ensure_dict
 from followthemoney import StatementEntity

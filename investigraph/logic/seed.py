@@ -19,7 +19,7 @@ def handle(ctx: DatasetContext) -> Generator[Source, None, None]:
     """
     if ctx.config.seed.uri is not None:
         store = get_store(ctx.config.seed.uri)
-        globs = ensure_list(ctx.config.seed.glob) or [None]
+        globs = ensure_list(ctx.config.seed.glob)
         for glob in globs:
             for key in store.iterate_keys(
                 glob=glob,
@@ -27,6 +27,6 @@ def handle(ctx: DatasetContext) -> Generator[Source, None, None]:
                 exclude_prefix=ctx.config.seed.exclude_prefix,
             ):
                 yield Source(
-                    uri=store.get_key(key),
+                    uri=store.to_uri(key),
                     **ensure_dict(ctx.config.seed.source_options),
                 )

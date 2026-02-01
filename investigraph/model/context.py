@@ -2,26 +2,31 @@ from functools import cache, cached_property
 from typing import IO, Any, AnyStr, ContextManager, Generator
 
 from anystore import smart_open
-from anystore.io import DEFAULT_MODE, Uri, get_logger, logged_items
-from anystore.store import BaseStore
+from anystore.io import logged_items
+from anystore.logging import get_logger
+from anystore.logic.constants import DEFAULT_MODE
+from anystore.store import Store as AnyStore
+from anystore.types import Uri
 from followthemoney import StatementEntity
 from followthemoney.util import make_entity_id
 from ftmq.aggregate import merge
 from ftmq.model import Dataset
-from ftmq.store import Store, get_store
+from ftmq.store import Store as FtmStore
+from ftmq.store import get_store as get_ftm_store
 from ftmq.types import StatementEntities
 from ftmq.util import join_slug, make_fingerprint_id
+from memorious.logic.fetch import fetch
 from pydantic import BaseModel, ConfigDict
 from structlog.stdlib import BoundLogger
 
-from investigraph.archive import archive_source, get_archive
-from investigraph.cache import get_archive_cache, get_runtime_cache, make_cache_key
 from investigraph.exceptions import DataError
 from investigraph.model.config import Config, get_config
 from investigraph.model.source import Source
 from investigraph.settings import Settings
 from investigraph.types import RecordGenerator
 from investigraph.util import make_entity
+
+settings = Settings()
 
 
 class DatasetContext(BaseModel):
@@ -39,15 +44,15 @@ class DatasetContext(BaseModel):
         """The dataset id prefix (defaults to its name)"""
         return self.config.dataset.prefix or self.dataset
 
-    @property
-    def cache(self) -> BaseStore:
+    @cached_property
+    def cache(self) -> AnyStore:
         """A shared cache instance"""
-        return get_runtime_cache()
+        return settings.cache.to_store()
 
     @cached_property
-    def store(self) -> Store:
+    def store(self) -> FtmStore:
         """The statement store instance to write fragments to"""
-        return get_store(self.config.load.uri, dataset=self.config.dataset.name)
+        return get_ftm_store(self.config.load.uri, dataset=self.config.dataset.name)
 
     @property
     def log(self) -> BoundLogger:
@@ -212,34 +217,6 @@ class DatasetContext(BaseModel):
 class SourceContext(DatasetContext):
     source: Source
 
-    @cached_property
-    def extract_key(self) -> str:
-        """
-        The computed cache ke for extraction for the current source.
-        See [Cache][investigraph.cache]
-        """
-        key = make_cache_key(self.source.uri, use_checksum=True)
-        if not key:
-            raise ValueError(f"Empty cache key for source `{self.source.name}`")
-        return f"extracted/{self.dataset}/{key}"
-
-    @cached_property
-    def should_extract(self) -> bool:
-        """
-        Check if the source with the same cache key was already extracted
-        """
-        settings = Settings()
-        if settings.extract_cache:
-            cache = get_archive_cache()
-            if cache.exists(self.extract_key):
-                self.log.info(
-                    "Skipping cached source",
-                    cache_key=self.extract_key,
-                    source=self.source.uri,
-                )
-                return False
-        return True
-
     # STAGES
 
     def extract(self, limit: int | None = None) -> RecordGenerator:
@@ -254,8 +231,6 @@ class SourceContext(DatasetContext):
         Yields:
             Generator of dictionaries `dict[str, Any]` that are the extracted records.
         """
-        if not self.should_extract:
-            return
 
         def _records():
             for ix, record in enumerate(self.config.extract.handle(self), 1):
@@ -272,10 +247,6 @@ class SourceContext(DatasetContext):
             dataset=self.dataset,
             source=self.source.uri,
         )
-
-        if limit is None:
-            cache = get_archive_cache()
-            cache.touch(self.extract_key)
 
     def transform(self, records: RecordGenerator) -> StatementEntities:
         """
@@ -348,10 +319,9 @@ class SourceContext(DatasetContext):
                 leaving the context.
         """
         uri = self.source.uri
-        if self.config.extract.archive and not self.source.is_local:
-            uri = archive_source(uri)
-            archive = get_archive()
-            return archive.open(uri, mode=mode, **kwargs)
+        if not self.source.resource.is_local:
+            response = fetch(uri, dataset=self.dataset)
+            return response.context.open(response.content_hash)
         return smart_open(uri, mode=mode, **kwargs)
 
 
