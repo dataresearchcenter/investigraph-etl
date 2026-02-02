@@ -2347,14 +2347,16 @@ files = [
 ]
 
 [[package]]
-name = "memorious"
-version = "3.0.1"
+name = "memorious4"
+version = "4.0.0"
 description = "A minimalistic, recursive web crawling library for Python."
 optional = false
-python-versions = ">=3.11,<3.14"
+python-versions = "<3.14,>=3.11"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "memorious4-4.0.0-py3-none-any.whl", hash = "sha256:7e87066073076b0cd046dab38ffe968e03748aa305e92d1d85876268de3c0e3d"},
+    {file = "memorious4-4.0.0.tar.gz", hash = "sha256:987287f4ed0e77f77a0720ad180882f9ab956f47e601fb0f0b7f1d97caa8d20b"},
+]
 
 [package.dependencies]
 alephclient = ">=2.6.0,<3.0.0"
@@ -2381,12 +2383,6 @@ ftp = ["PySocks (==1.7.1)", "requests-ftp (>=0.3.1,<0.4.0)", "requests[security]
 postgres = ["psycopg2 (>=2.9.10,<3.0.0)", "sqlalchemy (>=2.0.36,<3.0.0)"]
 redis = ["fakeredis (>=2.26.2,<3.0.0)", "redis (>=4.0.0,<6.0.0)"]
 sql = ["sqlalchemy (>=2.0.36,<3.0.0)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/dataresearchcenter/memorious"
-reference = "HEAD"
-resolved_reference = "555f9fb9708275f019f774bc328f52874a243ef3"
 
 [[package]]
 name = "mergedeep"
@@ -5311,4 +5307,4 @@ sql = ["sqlalchemy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "f95c2086797244c01d012dcf7826c4c7449ec190734ff3ea3d682bee8d53943a"
+content-hash = "765e1ca98b949f0a346c86d9f0347353273d1675a62d35ddcdad4cf8e3da22d3"
