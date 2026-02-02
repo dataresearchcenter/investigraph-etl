@@ -15,13 +15,12 @@ classifiers = [
 ]
 requires-python = ">=3.11,<3.14"
 dependencies = [
-    "anystore @ git+https://github.com/dataresearchcenter/anystore.git@chore/refactor",
-    "ftmq @ git+https://github.com/dataresearchcenter/ftmq.git",
+    "anystore (>=1.0.1,<2.0.0)",
+    "ftmq (>=4.5.2,<5.0.0)",
     "runpandarun (>=0.7.0,<0.8.0)",
     "dateparser (>=1.2.2,<2.0.0)",
     "followthemoney (>=4.5.1,<5.0.0)",
     "memorious @ git+https://github.com/dataresearchcenter/memorious",
-    "ftm-lakehouse @ git+https://github.com/openaleph/ftm-lakehouse.git",
 ]
 
 [project.optional-dependencies]
