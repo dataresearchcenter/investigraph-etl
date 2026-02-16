@@ -59,3 +59,16 @@ class Settings(BaseSettings):
 
     store_uri: str = Field(default="memory:///", alias="ftm_statement_store")
     """Statement store for entity aggregation"""
+
+    incremental: bool = False
+    """If true, skip already processed sources"""
+
+    tags_uri: str | None = None
+    """Tags storage for incremental source extraction (default in-memory or
+    lakehouse if available)"""
+
+    lakehouse_uri: str | None = Field(default=None, alias="lakehouse_uri")
+
+    @property
+    def is_lakehouse(self) -> bool:
+        return self.lakehouse_uri is not None

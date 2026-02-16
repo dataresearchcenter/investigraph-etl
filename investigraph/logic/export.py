@@ -8,6 +8,7 @@ from anystore.io import logged_items, smart_write_model
 from anystore.logging import get_logger
 from followthemoney import StatementEntity
 from followthemoney.proxy import E
+from ftm_lakehouse.operation import make as make_lake
 from ftmq.aggregate import merge
 from ftmq.io import smart_write_proxies
 from ftmq.model import Dataset
@@ -53,6 +54,13 @@ def handle(ctx: "DatasetContext", *args, **kwargs) -> Dataset:
     Returns:
         The `Dataset` object with calculated statistics.
     """
+    if ctx.lake:
+        # complete finalize of dataset
+        ctx.lake.update_model(**ctx.config.model_dump())
+        make_lake(ctx.lake)
+        return ctx.config.dataset
+
+    # default implementation
     collector = Collector()
     proxies = ctx.store.iterate(dataset=ctx.dataset)
     iterator = get_iterator(proxies, collector)

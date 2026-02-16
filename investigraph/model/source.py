@@ -1,6 +1,7 @@
 from anystore.model import Stats
 from anystore.store.resource import UriResource
-from anystore.util import ensure_uri
+from anystore.util import ensure_uri, join_relpaths
+from anystore.util.checksum import make_uri_key
 from normality import slugify
 from pydantic import BaseModel
 from runpandarun import Playbook
@@ -36,6 +37,11 @@ class Source(BaseModel):
     @property
     def mimetype(self) -> str:
         return self.resource.info().mimetype
+
+    @property
+    def cache_key(self) -> str | None:
+        if self.resource.cache_key:
+            return join_relpaths(make_uri_key(self.uri), self.resource.cache_key)
 
     def info(self) -> Stats:
         if self._info is None:
