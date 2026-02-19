@@ -272,7 +272,7 @@ class SourceContext(DatasetContext):
         cache_key = self.make_tag_key("extract", self.source.cache_key)
         if settings.incremental and cache_key and self.tags.exists(cache_key):
             self.log.info(
-                f"Skipping source `{self.source.uri}`, cached",
+                f"Skipping source `{self.source.uri}`, already extracted",
                 source=self.source.uri,
                 cache_key=cache_key,
             )
