@@ -15,7 +15,7 @@ classifiers = [
 ]
 requires-python = ">=3.11,<3.14"
 dependencies = [
-    "anystore (>=1.1.4,<2.0.0)",
+    "anystore (>=1.1.7,<2.0.0)",
     "ftmq (>=4.6.1,<5.0.0)",
     "runpandarun (>=0.7.0,<0.8.0)",
     "dateparser (>=1.2.2,<2.0.0)",
