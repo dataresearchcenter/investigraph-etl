@@ -40,7 +40,7 @@ Documentation = "https://docs.investigraph.dev"
 Issues = "https://github.com/dataresearchcenter/investigraph-etl/issues"
 
 [tool.poetry.group.dev.dependencies]
-pytest-env = ">=1.1.1"
+pytest-env = ">=1.6.0"
 pytest = ">=9.0.3,<10.0.0"
 pytest-cov = ">=4.1,<7.0"
 black = ">=23.11,<25.0"
