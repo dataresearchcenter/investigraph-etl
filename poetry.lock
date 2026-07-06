@@ -270,14 +270,14 @@ trio = ["trio (>=0.32.0)"]
 
 [[package]]
 name = "anystore"
-version = "1.2.0"
+version = "1.2.4"
 description = "Store and cache things anywhere"
 optional = false
 python-versions = "<4,>=3.11"
 groups = ["main"]
 files = [
-    {file = "anystore-1.2.0-py3-none-any.whl", hash = "sha256:80776336c85f7f8132ab8ce15e1a093b5e5a7deba742a3a787bf4e0b77b72338"},
-    {file = "anystore-1.2.0.tar.gz", hash = "sha256:67d08b383714a833c076f24d9aba84470ab814a3b84e432263e370c0a587ce24"},
+    {file = "anystore-1.2.4-py3-none-any.whl", hash = "sha256:004a006322b1e96a62479fd58c919d528965feb1655b40ebd2b5f21f68fe7078"},
+    {file = "anystore-1.2.4.tar.gz", hash = "sha256:f4bbede8277aea3e2bbd407bcadd0d2a14ccffe5fec6b5c939a3e4a9fe40dd42"},
 ]
 
 [package.dependencies]
@@ -292,16 +292,17 @@ pydantic = ">=2.13.4,<3.0.0"
 pydantic-settings = ">=2.7.1,<3.0.0"
 rich = ">=10.0.0,<16.0.0"
 rigour = ">=2.1.1,<3.0.0"
-s3fs = ">2023.10,<2027"
-structlog = ">=22.0.0,<26.0.0"
-tqdm = ">=4.67.1,<5.0.0"
+structlog = ">=22.0.0"
+tqdm = ">=4.68.1,<5.0.0"
 typer = ">=0.25.1"
 uuid7 = ">=0.1.0,<0.2.0"
 
 [package.extras]
-api = ["fastapi (>=0.136.1,<1.0.0)", "uvicorn (>=0.46.0,<1.0.0)"]
-redis = ["fakeredis (>=2.26.2,<3.0.0)", "redis (>=4.0.0)"]
-sql = ["sqlalchemy (>=2.0.36,<3.0.0)"]
+api = ["aiohttp (!=4.0.0a0,!=4.0.0a1)", "fastapi (>=0.136.3,<1.0.0)", "uvicorn (>=0.48.0,<1.0.0)"]
+http = ["fsspec[http] (>2023.10,<2027)"]
+redis = ["fakeredis (>=2.36.2,<3.0.0)", "redis (>=4.0.0)"]
+s3 = ["s3fs (>2023.10,<2027)"]
+sql = ["sqlalchemy (>=2.0.51,<3.0.0)"]
 
 [[package]]
 name = "arro3-core"
@@ -5747,4 +5748,4 @@ sql = ["sqlalchemy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.14"
-content-hash = "d944211f1ecf2c41a6978a2cdfdcbd50129510ec22dd67e7cc7e4c28a7a0c3f6"
+content-hash = "eec5011802843c1fa799dbadf54a47635609c9e3287b3fddc5ce8c6d9a2435b1"
