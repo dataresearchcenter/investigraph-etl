@@ -22,7 +22,7 @@ dependencies = [
     "followthemoney (>=4.9.0,<5.0.0)",
     "memorious4 @ git+https://github.com/dataresearchcenter/memorious.git",
     "ftm-lakehouse @ git+https://github.com/openaleph/ftm-lakehouse.git",
-    "rigour (>=2.1.2,<3.0.0)",
+    "rigour (>=2.2.0,<3.0.0)",
 ]
 
 [project.optional-dependencies]
