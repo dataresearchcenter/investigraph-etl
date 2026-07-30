@@ -63,7 +63,7 @@ class DatasetContext(BaseModel):
     def store(self) -> FtmStore | EntityRepository:
         """The statement store instance to write fragments to"""
         if self.lake:
-            return self.lake.entities
+            return self.lake.get_entities()
         return get_ftm_store(self.config.load.uri, dataset=self.config.dataset.name)
 
     @cached_property
