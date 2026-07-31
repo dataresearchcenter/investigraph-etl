@@ -12,7 +12,9 @@ As the different stages of a pipeline can be executed separately via the [comman
 
 ## Run a complete pipeline in parallel
 
-    investigraph extract | parallel --pipe investigraph transform | parallel --pipe investigraph load
+This is a starting point, `parallel` provides lots of options to improve efficiency based on the specific workflow:
+
+    investigraph extract | parallel --pipe --round-robin --line-buffer investigraph transform | parallel --pipe --round-robin --line-buffer investigraph load
 
 !!! warning "Use shared stores that can handle parallel writes"
     - When using the `load` stage together with `parallel` as in the example above, make sure the FollowTheMoney store can handle parallel writes (e.g. postgres)
