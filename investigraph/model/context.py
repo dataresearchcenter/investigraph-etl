@@ -269,6 +269,7 @@ class SourceContext(DatasetContext):
         Yields:
             Generator of dictionaries `dict[str, Any]` that are the extracted records.
         """
+        self.log.info("Extracting source ...", uri=self.source.uri)
         cache_key = self.make_tag_key("extract", self.source.cache_key)
         if settings.incremental and cache_key and self.tags.exists(cache_key):
             self.log.info(
@@ -369,6 +370,7 @@ class SourceContext(DatasetContext):
         """
         uri = self.source.uri
         if self.source.resource.is_http:
+            self.log.info("Downloading remote source ...", uri=self.source.uri)
             response = fetch(uri, dataset=self.dataset)
             return response.context.open(response.content_hash)
         return smart_open(uri, mode=mode, **kwargs)
