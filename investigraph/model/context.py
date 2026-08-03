@@ -8,14 +8,14 @@ from anystore.io import logged_items
 from anystore.logging import get_logger
 from anystore.logic.constants import DEFAULT_MODE
 from anystore.store import Store as AnyStore
-from anystore.types import Uri
+from anystore.types import SDict, Uri
 from anystore.util import join_relpaths
 from followthemoney import StatementEntity
 from followthemoney.util import make_entity_id
 from ftm_lakehouse import get_lakehouse
-from ftm_lakehouse.core.settings import Settings as LakeSettings
 from ftm_lakehouse.dataset import Dataset as LakeDataset
 from ftm_lakehouse.dataset import EntityRepository
+from ftm_lakehouse.model import File
 from ftm_lakehouse.repository.factories import get_tags as get_lake_tags
 from ftm_lakehouse.storage.tags import TagStore
 from ftmq.aggregate import merge
@@ -29,6 +29,7 @@ from pydantic import BaseModel, ConfigDict
 from structlog.stdlib import BoundLogger
 
 from investigraph.exceptions import DataError
+from investigraph.logic.fetch import fetch_file
 from investigraph.model.config import Config, get_config
 from investigraph.model.source import Source
 from investigraph.settings import Settings
@@ -36,7 +37,6 @@ from investigraph.types import RecordGenerator
 from investigraph.util import make_entity
 
 settings = Settings()
-lake_settings = LakeSettings()
 
 
 class DatasetContext(BaseModel):
@@ -247,6 +247,20 @@ class DatasetContext(BaseModel):
         if not id_:
             raise ValueError("Empty id")
         return id_
+
+    def fetch(self, url: str, fetch_options: SDict | None = None, **extra_data) -> File:
+        """
+        Retrieve a remote file via http. Uses `memorious.logic.fetch` module for
+        internal caching. If the remote source didn't change, it is not re-fetched.
+        Stores the bytes content in the configured `LAKEHOUSE_URI` or `DATA_ROOT`
+        for the current dataset.
+
+        Args:
+            url: Remote url to fetch
+            fetch_options: Pass through kwargs to `memorious.logic.fetch.fetch`
+            extra_data: Extra properties or metadata to store at the `File` object.
+        """
+        return fetch_file(self.dataset, url, fetch_options=fetch_options, **extra_data)
 
 
 class SourceContext(DatasetContext):
