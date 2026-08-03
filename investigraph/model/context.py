@@ -14,8 +14,8 @@ from followthemoney import StatementEntity
 from followthemoney.util import make_entity_id
 from ftm_lakehouse import get_lakehouse
 from ftm_lakehouse.dataset import Dataset as LakeDataset
-from ftm_lakehouse.dataset import EntityRepository
 from ftm_lakehouse.model import File
+from ftm_lakehouse.repository import EntityRepository
 from ftm_lakehouse.repository.factories import get_tags as get_lake_tags
 from ftm_lakehouse.storage.tags import TagStore
 from ftmq.aggregate import merge
