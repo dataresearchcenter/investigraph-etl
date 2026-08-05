@@ -1564,7 +1564,7 @@ s3 = ["s3fs (>2024.2.0)"]
 type = "git"
 url = "https://github.com/openaleph/ftm-lakehouse.git"
 reference = "HEAD"
-resolved_reference = "ff1cbd81aa0004af7f644ee0423847ba9f17285b"
+resolved_reference = "3fa222f7836d3a2c2c53573899a67c725491fdbf"
 
 [[package]]
 name = "ftmq"
@@ -2656,7 +2656,7 @@ sql = ["sqlalchemy (>=2.0.36,<3.0.0)"]
 type = "git"
 url = "https://github.com/dataresearchcenter/memorious.git"
 reference = "HEAD"
-resolved_reference = "f69141d9b9f52b1d0095df5d1a39659e7dce03f7"
+resolved_reference = "8069c451ebe05e62719512fd9db4c459eaa3d22b"
 
 [[package]]
 name = "mergedeep"
