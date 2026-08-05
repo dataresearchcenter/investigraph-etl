@@ -5,7 +5,7 @@ from functools import cache
 
 from anystore.types import SDict
 from banal import ensure_dict
-from ftm_lakehouse import get_lakehouse
+from ftm_lakehouse import get_archive as get_lakehouse_archive
 from ftm_lakehouse.model import File
 from ftm_lakehouse.repository import ArchiveRepository
 from memorious.logic.fetch import fetch
@@ -17,8 +17,8 @@ from investigraph.settings import Settings
 def get_archive(dataset: str) -> ArchiveRepository:
     settings = Settings()
     # use configured lakehouse uri or fall back to data_root
-    lake = get_lakehouse(settings.lakehouse_uri or settings.data_root)
-    return lake.get_dataset(dataset).get_archive()
+    uri = f"{settings.lakehouse_uri or settings.data_root}/{dataset}"
+    return get_lakehouse_archive(uri)
 
 
 def fetch_file(
