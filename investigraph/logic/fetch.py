@@ -4,6 +4,7 @@ back to work with"""
 from functools import cache
 
 from anystore.types import SDict
+from anystore.util import join_uri
 from banal import ensure_dict
 from ftm_lakehouse import get_archive as get_lakehouse_archive
 from ftm_lakehouse.model import File
@@ -17,8 +18,8 @@ from investigraph.settings import Settings
 def get_archive(dataset: str) -> ArchiveRepository:
     settings = Settings()
     # use configured lakehouse uri or fall back to data_root
-    uri = f"{settings.lakehouse_uri or settings.data_root}/{dataset}"
-    return get_lakehouse_archive(uri)
+    uri = join_uri(settings.lakehouse_uri or settings.data_root, dataset)
+    return get_lakehouse_archive(dataset, uri)
 
 
 def fetch_file(
