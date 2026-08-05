@@ -12,10 +12,8 @@ from anystore.types import SDict, Uri
 from anystore.util import join_relpaths
 from followthemoney import StatementEntity
 from followthemoney.util import make_entity_id
-from ftm_lakehouse import get_lakehouse
-from ftm_lakehouse.dataset import Dataset as LakeDataset
 from ftm_lakehouse.model import File
-from ftm_lakehouse.repository import EntityRepository
+from ftm_lakehouse.repository import EntityRepository, get_entities
 from ftm_lakehouse.repository.factories import get_tags as get_lake_tags
 from ftm_lakehouse.storage.tags import TagStore
 from ftmq.aggregate import merge
@@ -36,13 +34,15 @@ from investigraph.settings import Settings
 from investigraph.types import RecordGenerator
 from investigraph.util import make_entity
 
-settings = Settings()
-
 
 class DatasetContext(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     config: Config
+
+    @cached_property
+    def settings(self) -> Settings:
+        return Settings()
 
     @property
     def dataset(self) -> str:
@@ -57,20 +57,20 @@ class DatasetContext(BaseModel):
     @cached_property
     def cache(self) -> AnyStore:
         """A shared cache instance"""
-        return settings.cache.to_store()
+        return self.settings.cache.to_store()
 
     @cached_property
     def store(self) -> FtmStore | EntityRepository:
         """The statement store instance to write fragments to"""
-        if self.lake:
-            return self.lake.get_entities()
+        if self.settings.is_lakehouse:
+            return get_entities(self.dataset)
         return get_ftm_store(self.config.load.uri, dataset=self.config.dataset.name)
 
     @cached_property
     def tags(self) -> Tags | TagStore:
-        if settings.tags_uri:
-            return get_tags(settings.tags_uri)
-        if self.lake:
+        if self.settings.tags_uri:
+            return get_tags(self.settings.tags_uri)
+        if self.settings.is_lakehouse:
             return get_lake_tags(self.dataset, tenant="investigraph")
         return get_tags("memory://")
 
@@ -79,12 +79,6 @@ class DatasetContext(BaseModel):
             if not part:
                 return
         return join_relpaths(self.dataset, *parts)
-
-    @cached_property
-    def lake(self) -> LakeDataset | None:
-        if settings.is_lakehouse:
-            lake = get_lakehouse()
-            return lake.get_dataset(self.dataset)
 
     @property
     def log(self) -> BoundLogger:
@@ -119,8 +113,8 @@ class DatasetContext(BaseModel):
         Returns:
             Number of entities loaded to store
         """
-        if self.lake:
-            store_uri = self.lake.uri
+        if self.settings.is_lakehouse:
+            store_uri = get_entities(self.dataset)._statements.uri
         else:
             store_uri = self.config.load.uri
         proxies = logged_items(
@@ -285,7 +279,7 @@ class SourceContext(DatasetContext):
         """
         self.log.info("Extracting source ...", uri=self.source.uri)
         cache_key = self.make_tag_key("extract", self.source.cache_key)
-        if settings.incremental and cache_key and self.tags.exists(cache_key):
+        if self.settings.incremental and cache_key and self.tags.exists(cache_key):
             self.log.info(
                 f"Skipping source `{self.source.uri}`, already extracted",
                 source=self.source.uri,
