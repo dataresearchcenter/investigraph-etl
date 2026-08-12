@@ -42,8 +42,8 @@ def fetch_file(
         fetch_options: Pass through kwargs to `memorious.logic.fetch.fetch`
         extra_data: Extra properties or metadata to store at the `File` object.
     """
-    tag = f"fetch_file/{cache_key}"
     with create_fetch_client(dataset=dataset) as client:
+        tag = client.context.make_key(f"fetch_file/{cache_key}")
         if cache_key and client.context.check_incremental(cache_key):
             file = client.context.tags.get(tag, model=File)
             if file is not None:
