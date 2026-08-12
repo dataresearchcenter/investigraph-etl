@@ -9,7 +9,7 @@ from banal import ensure_dict
 from ftm_lakehouse import get_archive as get_lakehouse_archive
 from ftm_lakehouse.model import File
 from ftm_lakehouse.repository import ArchiveRepository
-from memorious.logic.fetch import fetch
+from memorious.logic.fetch import create_fetch_client, fetch
 
 from investigraph.settings import Settings
 
@@ -23,7 +23,11 @@ def get_archive(dataset: str) -> ArchiveRepository:
 
 
 def fetch_file(
-    dataset: str, url: str, fetch_options: SDict | None = None, **extra_data
+    dataset: str,
+    url: str,
+    cache_key: str | None = None,
+    fetch_options: SDict | None = None,
+    **extra_data,
 ) -> File:
     """
     Retrieve a remote file via http. Uses `memorious.logic.fetch` module for
@@ -34,9 +38,20 @@ def fetch_file(
     Args:
         dataset: Investigraph dataset
         url: Remote url to fetch
+        cache_key: Cache key to use for incremental skipping
         fetch_options: Pass through kwargs to `memorious.logic.fetch.fetch`
         extra_data: Extra properties or metadata to store at the `File` object.
     """
-    archive = get_archive(dataset)
-    res = fetch(url, dataset=dataset, **ensure_dict(fetch_options))
-    return archive.store(url, checksum=res.content_hash, **extra_data)
+    tag = f"fetch_file/{cache_key}"
+    with create_fetch_client(dataset=dataset) as client:
+        if cache_key and client.context.check_incremental(cache_key):
+            file = client.context.tags.get(tag, model=File)
+            if file is not None:
+                return file
+        archive = get_archive(dataset)
+        res = fetch(url, dataset=dataset, **ensure_dict(fetch_options))
+        file = archive.store(url, checksum=res.content_hash, **extra_data)
+        if cache_key:
+            client.context.mark_incremental(cache_key)
+            client.context.tags.put(tag, file, model=File)
+        return file
