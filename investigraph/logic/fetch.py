@@ -9,7 +9,7 @@ from banal import ensure_dict
 from ftm_lakehouse import get_archive as get_lakehouse_archive
 from ftm_lakehouse.model import File
 from ftm_lakehouse.repository import ArchiveRepository
-from memorious.logic.fetch import create_fetch_client, fetch
+from memorious.logic.fetch import create_fetch_client
 
 from investigraph.settings import Settings
 
@@ -49,7 +49,8 @@ def fetch_file(
             if file is not None:
                 return file
         archive = get_archive(dataset)
-        res = fetch(url, dataset=dataset, **ensure_dict(fetch_options))
+        res = client.get(url, **ensure_dict(fetch_options))
+        assert res is not None
         file = archive.store(url, checksum=res.content_hash, **extra_data)
         if cache_key:
             client.context.mark_incremental(cache_key)
