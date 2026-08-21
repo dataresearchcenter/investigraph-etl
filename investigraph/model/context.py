@@ -114,7 +114,7 @@ class DatasetContext(BaseModel):
             Number of entities loaded to store
         """
         if self.settings.is_lakehouse:
-            store_uri = get_entities(self.dataset)._statements.uri
+            store_uri = get_entities(self.dataset).uri
         else:
             store_uri = self.config.load.uri
         proxies = logged_items(
