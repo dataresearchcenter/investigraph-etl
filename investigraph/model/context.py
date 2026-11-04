@@ -12,7 +12,6 @@ from anystore.types import SDict, Uri
 from anystore.util import join_relpaths
 from followthemoney import StatementEntity
 from followthemoney.util import make_entity_id
-from ftm_lakehouse.model import File
 from ftm_lakehouse.repository import EntityRepository, get_entities
 from ftm_lakehouse.repository.factories import get_tags as get_lake_tags
 from ftm_lakehouse.storage.tags import TagStore
@@ -242,7 +241,7 @@ class DatasetContext(BaseModel):
             raise ValueError("Empty id")
         return id_
 
-    def fetch(self, url: str, fetch_options: SDict | None = None, **extra_data) -> File:
+    def fetch(self, url: str, fetch_options: SDict | None = None, **extra_data) -> str:
         """
         Retrieve a remote file via http. Uses `memorious.logic.fetch` module for
         internal caching. If the remote source didn't change, it is not re-fetched.
@@ -252,7 +251,10 @@ class DatasetContext(BaseModel):
         Args:
             url: Remote url to fetch
             fetch_options: Pass through kwargs to `memorious.logic.fetch.fetch`
-            extra_data: Extra properties or metadata to store at the `File` object.
+            extra_data: Extra properties or metadata to store next to the file.
+
+        Returns:
+            The checksum of the file in the archive
         """
         return fetch_file(self.dataset, url, fetch_options=fetch_options, **extra_data)
 
